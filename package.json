@@ -1,0 +1,44 @@
+{
+  "name": "@mini-math/monorepo",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "npm run clean && turbo run build",
+    "dev": "turbo run dev --parallel",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "prune": "turbo run clean && rimraf node_modules .turbo  packages/**/node_modules packages/**/.turbo packages/**/tsconfig.build.tsbuildinfo",
+    "clean": "rimraf packages/**/node_modules packages/**/.turbo packages/**/tsconfig.build.tsbuildinfo",
+    "changeset": "changeset",
+    "version-packages": "changeset version && npm install",
+    "release": "changeset publish",
+    "format": "prettier --cache --write .",
+    "format:check": "prettier --check .",
+    "lint": "turbo run lint",
+    "lint:repo": "eslint . --max-warnings=0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "private": true,
+  "packageManager": "npm@10.9.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "@changesets/cli": "^2.29.7",
+    "@typescript-eslint/eslint-plugin": "^8.46.1",
+    "@typescript-eslint/parser": "^8.46.1",
+    "eslint": "^9.38.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "prettier": "^3.6.2",
+    "rimraf": "^6.0.1",
+    "tsup": "^8.5.0",
+    "turbo": "^2.5.8",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.1",
+    "vitest": "^3.2.4"
+  }
+}

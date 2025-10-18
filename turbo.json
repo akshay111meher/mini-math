@@ -1,0 +1,11 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": { "outputs": ["dist/**", "!dist/**/*.map"], "dependsOn": ["^build"], "cache": true },
+    "dev": { "cache": false, "persistent": true },
+    "test": { "dependsOn": ["build"], "outputs": ["coverage/**"], "cache": true },
+    "lint": { "cache": true },
+    "typecheck": { "cache": true },
+    "clean": { "cache": false }
+  }
+}
