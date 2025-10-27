@@ -5,6 +5,8 @@ export class PrinterNode implements ExecutableNode {
   async execute(): Promise<this> {
     console.log('Id: ', this.nodeDef.id)
     console.log('Name: ', this.nodeDef.name)
+    console.log('Input: ', this.nodeDef.inputs)
+    console.log('Outputs: ', this.nodeDef.outputs)
 
     return this
   }

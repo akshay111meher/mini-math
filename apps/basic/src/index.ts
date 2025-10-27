@@ -10,8 +10,8 @@ const nodes: NodeDefType[] = basicProgramJson.nodes.map((a) => {
     name: 'code',
     config: {},
     data: {},
-    inputs: [],
-    outputs: [],
+    inputs: a.inputs,
+    outputs: a.outputs,
     executed: false,
   }
 })
@@ -33,7 +33,10 @@ const workflowJson: WorkflowDef = {
   runtime: { queue: [], visited: [], current: null, finished: false },
   policies: { defaultTimeoutMs: 1000, maxParallel: 1 },
 }
-let workflow = new Workflow(workflowJson, new PrinterNodeFactory())
+
+const printerNodeFactory = new PrinterNodeFactory()
+
+let workflow = new Workflow(workflowJson, printerNodeFactory)
 
 async function run() {
   while (!workflow.isFinished()) {
@@ -44,7 +47,7 @@ async function run() {
       console.log(info.node.id, 'clocked')
     }
 
-    workflow = new Workflow(workflow.serialize(), new PrinterNodeFactory())
+    workflow = new Workflow(workflow.serialize(), printerNodeFactory)
   }
 
   return 'Done Workflow Execution'

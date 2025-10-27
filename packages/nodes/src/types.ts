@@ -10,12 +10,13 @@ export enum NodeType {
 }
 
 export const Input = z.object({
+  id: z.string().optional(),
   name: z.string(),
   type: z.string(),
   required: z.boolean().optional(),
 })
 
-export const Output = z.object({ name: z.string(), type: z.string() })
+export const Output = z.object({ id: z.string().optional(), name: z.string(), type: z.string() })
 
 export const NodeDef = z.object({
   id: NodeRef,
