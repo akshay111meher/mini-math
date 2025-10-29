@@ -1,1 +1,1 @@
-export * from './Nodefactory.js'
+export * from './PrinterNodefactory.js'

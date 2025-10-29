@@ -6,7 +6,8 @@ import { EdgeDefType, NodeDefType, NodeType } from '@mini-math/nodes'
 const nodes: NodeDefType[] = basicProgramJson.nodes.map((a) => {
   return {
     id: a.id,
-    type: NodeType.code,
+    // TODO: update this
+    type: NodeType.ifElse,
     name: 'code',
     config: {},
     data: {},
@@ -40,9 +41,9 @@ let workflow = new Workflow(workflowJson, printerNodeFactory)
 
 async function run() {
   while (!workflow.isFinished()) {
-    let info = await workflow.clock()
+    const info = await workflow.clock()
 
-    console.log(JSON.stringify((info as any).node.inputs, null, 2))
+    console.log(JSON.stringify(info, null, 2))
 
     workflow = new Workflow(workflow.serialize(), printerNodeFactory)
   }

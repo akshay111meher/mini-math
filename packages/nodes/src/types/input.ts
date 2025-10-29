@@ -1,11 +1,44 @@
 import { z } from 'zod'
 
-export const Input = z.object({
+const _InputString = z.object({
   id: z.string().optional(),
   name: z.string(),
-  type: z.string(),
+  type: z.literal('string'),
+  value: z.string(),
   required: z.boolean().optional(),
 })
+
+const _InputNumber = z.object({
+  id: z.string().optional(),
+  name: z.string(),
+  type: z.literal('number'),
+  value: z.number(),
+  required: z.boolean().optional(),
+})
+
+const _InputBoolean = z.object({
+  id: z.string().optional(),
+  name: z.string(),
+  type: z.literal('boolean'),
+  value: z.boolean(),
+  required: z.boolean().optional(),
+})
+
+const _InputJson = z.object({
+  id: z.string().optional(),
+  name: z.string(),
+  type: z.literal('json'),
+  value: z.unknown(), // could also be z.record(z.any()) if you want "must be object"
+  required: z.boolean().optional(),
+})
+
+export const Input = z.discriminatedUnion('type', [
+  _InputString,
+  _InputNumber,
+  _InputBoolean,
+  _InputJson,
+])
+
 export type InputType = z.infer<typeof Input>
 
 export class InputDefClass {

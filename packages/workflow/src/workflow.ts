@@ -199,7 +199,7 @@ export class Workflow {
     const mergedInputs = [...existingInputs]
 
     for (const out of parentOutputs) {
-      mergedInputs.push(out as any)
+      mergedInputs.push(out)
     }
 
     childNode.inputs = mergedInputs

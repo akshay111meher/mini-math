@@ -1,5 +1,4 @@
 import { WorkflowDef } from './types.js'
-import z from 'zod'
 
 export function hasCycle(workflowDef: WorkflowDef): boolean {
   const inDegree = new Map<string, number>()

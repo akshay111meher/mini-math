@@ -1,13 +1,11 @@
 import {
-  Input,
-  Output,
   ExecutableNodeBase,
   ExecutionResult,
   NodeDefType,
   OutputType,
   InputType,
 } from './types/index.js'
-import { z } from 'zod'
+
 import { ERROR_CODES } from './errors.js'
 
 export interface NodeFactoryType {

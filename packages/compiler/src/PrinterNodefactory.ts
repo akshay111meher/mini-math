@@ -5,12 +5,8 @@ import {
   NodeFactoryType,
   OutputType,
 } from '@mini-math/nodes'
-import z from 'zod'
-export class PrinterNode extends BaseNode {
-  constructor(nodeDef: NodeDefType) {
-    super(nodeDef)
-  }
 
+export class PrinterNode extends BaseNode {
   protected async _nodeExecutionLogic(): Promise<OutputType[]> {
     // log stuff if you still want diagnostics
     console.log('Id: ', this.nodeDef.id)
@@ -32,7 +28,7 @@ export class PrinterNode extends BaseNode {
       `types-${this.nodeDef.type}`,
     )
 
-    return [{ id: all_id, name: all_names, type: all_type }]
+    return [{ id: all_id, name: all_names, type: 'string', value: all_type }]
   }
 }
 

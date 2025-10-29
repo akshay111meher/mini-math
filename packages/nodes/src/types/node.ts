@@ -5,9 +5,22 @@ import { Output, OutputDefClass, OutputType } from './output.js'
 export const NodeRef = z.string().min(16)
 
 export enum NodeType {
-  'http.request',
-  'map',
+  'ifElse',
+  'trigger',
+  'wallet',
+  'privateKey',
+  'transaction',
+  'http',
+  'transform',
+  'condition',
   'code',
+  'variable',
+  'smartContract',
+  'cdpSmartContract',
+  'contractRead',
+  'cdpWallet',
+  'cdpTransaction',
+  'transferFunds',
 }
 
 export const NodeDef = z.object({
