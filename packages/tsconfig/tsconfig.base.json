@@ -1,4 +1,17 @@
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "composite": true, "declaration": true, "noEmit": true }
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "paths": { "@mini-math/*": ["packages/*/src"], "@mini-app/*": ["app/*/src"] }
+  },
+  "exclude": ["node_modules", "dist"]
 }

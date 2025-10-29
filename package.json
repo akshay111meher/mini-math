@@ -7,7 +7,7 @@
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "prune": "turbo run clean && rimraf node_modules .turbo  packages/**/node_modules packages/**/.turbo packages/**/tsconfig.build.tsbuildinfo",
-    "clean": "rimraf packages/**/node_modules packages/**/.turbo packages/**/tsconfig.build.tsbuildinfo app/**/node_modules app/**/.turbo app/**/tsconfig.build.tsbuildinfo",
+    "clean": "rimraf packages/**/node_modules packages/**/.turbo packages/**/tsconfig.build.tsbuildinfo apps/**/node_modules apps/**/.turbo apps/**/tsconfig.build.tsbuildinfo",
     "changeset": "changeset",
     "version-packages": "changeset version && npm install",
     "release": "changeset publish",

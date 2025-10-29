@@ -1,4 +1,6 @@
 import z from 'zod'
+import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi'
+extendZodWithOpenApi(z)
 
 const _OutputString = z.object({
   id: z.string().optional(),
@@ -25,7 +27,11 @@ const _OutputJson = z.object({
   id: z.string().optional(),
   name: z.string(),
   type: z.literal('json'),
-  value: z.unknown(),
+  value: z.unknown().openapi({
+    type: 'object',
+    description: 'Any arbitrary JSON value',
+    additionalProperties: true,
+  }),
 })
 
 export const Output = z.discriminatedUnion('type', [

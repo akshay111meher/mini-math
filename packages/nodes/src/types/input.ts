@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi'
+extendZodWithOpenApi(z)
 
 const _InputString = z.object({
   id: z.string().optional(),
@@ -28,7 +30,11 @@ const _InputJson = z.object({
   id: z.string().optional(),
   name: z.string(),
   type: z.literal('json'),
-  value: z.unknown(), // could also be z.record(z.any()) if you want "must be object"
+  value: z.unknown().openapi({
+    type: 'object',
+    description: 'Any arbitrary JSON value',
+    additionalProperties: true,
+  }),
   required: z.boolean().optional(),
 })
 
