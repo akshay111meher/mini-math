@@ -41,4 +41,7 @@ export class PrivateKeyNode extends BaseNode {
 
     return [output]
   }
+  async cost(): Promise<BigInt> {
+    return BigInt(9)
+  }
 }

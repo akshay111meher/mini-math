@@ -33,4 +33,8 @@ export class WalletNode extends BaseNode {
 
     return [output]
   }
+
+  async cost(): Promise<BigInt> {
+    return BigInt(16)
+  }
 }

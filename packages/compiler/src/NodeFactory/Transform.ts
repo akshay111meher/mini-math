@@ -45,6 +45,9 @@ export class TransformNode extends BaseNode {
 
     return [out]
   }
+  async cost(): Promise<BigInt> {
+    return BigInt(13)
+  }
 }
 
 const applyMapping = (data: any, mapping: Record<string, string>) => {

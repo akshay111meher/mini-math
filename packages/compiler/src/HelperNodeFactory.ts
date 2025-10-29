@@ -30,6 +30,10 @@ export class PrinterNode extends BaseNode {
 
     return [{ id: all_id, name: all_names, type: 'string', value: all_type }]
   }
+
+  async cost(): Promise<BigInt> {
+    return BigInt(0)
+  }
 }
 
 export class PrinterNodeFactory implements NodeFactoryType {

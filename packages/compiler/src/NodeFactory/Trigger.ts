@@ -25,4 +25,7 @@ export class TriggerNode extends BaseNode {
 
     return [output]
   }
+  async cost(): Promise<BigInt> {
+    return BigInt(14)
+  }
 }

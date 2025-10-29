@@ -29,6 +29,7 @@ export abstract class BaseNode implements ExecutableNodeBase {
   }
 
   protected abstract _nodeExecutionLogic(): Promise<OutputType[]>
+  public abstract cost(): Promise<BigInt>
 
   public async execute(): Promise<ExecutionResult> {
     // Option A: refuse re-execution at node level and surface that as 'error'
