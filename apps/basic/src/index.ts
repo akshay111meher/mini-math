@@ -31,8 +31,6 @@ const workflowJson: WorkflowDef = {
   nodes,
   edges,
   entry: basicProgramJson.nodes[0].id,
-  runtime: { queue: [], visited: [], current: null, finished: false },
-  policies: { defaultTimeoutMs: 1000, maxParallel: 1 },
 }
 
 const printerNodeFactory = new PrinterNodeFactory()
@@ -44,8 +42,9 @@ async function run() {
     const info = await workflow.clock()
 
     console.log(JSON.stringify(info, null, 2))
+    const [wf, rt] = workflow.serialize()
 
-    workflow = new Workflow(workflow.serialize(), printerNodeFactory)
+    workflow = new Workflow(wf, printerNodeFactory, rt)
   }
 
   return 'Done Workflow Execution'

@@ -1,0 +1,46 @@
+import pino from 'pino'
+
+type Level = 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace'
+export interface Logger {
+  child(bindings?: Record<string, unknown>): Logger
+  fatal(msg: string, meta?: Record<string, unknown>): void
+  error(msg: string, meta?: Record<string, unknown>): void
+  warn(msg: string, meta?: Record<string, unknown>): void
+  info(msg: string, meta?: Record<string, unknown>): void
+  debug(msg: string, meta?: Record<string, unknown>): void
+  trace(msg: string, meta?: Record<string, unknown>): void
+}
+
+const isProd = process.env.NODE_ENV === 'production'
+
+const root = pino({
+  level: process.env.LOG_LEVEL ?? 'debug',
+  base: null,
+  transport: isProd
+    ? undefined
+    : {
+        target: 'pino-pretty',
+        options: { colorize: true, singleLine: true, translateTime: 'SYS:HH:MM:ss.l' },
+      },
+})
+
+function wrap(instance: pino.Logger): Logger {
+  const call = (lvl: Level, msg: string, meta?: Record<string, unknown>) =>
+    (instance as any)[lvl](meta ?? {}, msg)
+
+  return {
+    child: (bindings) => wrap(instance.child(bindings ?? {})),
+    fatal: (m, meta) => call('fatal', m, meta),
+    error: (m, meta) => call('error', m, meta),
+    warn: (m, meta) => call('warn', m, meta),
+    info: (m, meta) => call('info', m, meta),
+    debug: (m, meta) => call('debug', m, meta),
+    trace: (m, meta) => call('trace', m, meta),
+  }
+}
+
+export const logger: Logger = wrap(root)
+
+export function makeLogger(service: string): Logger {
+  return logger.child({ service })
+}

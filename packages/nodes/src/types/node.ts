@@ -5,29 +5,29 @@ import { Output, OutputDefClass, OutputType } from './output.js'
 export const NodeRef = z.string().min(16)
 
 export enum NodeType {
-  'ifElse',
-  'trigger',
-  'wallet',
-  'privateKey',
-  'transaction',
-  'http',
-  'transform',
-  'condition',
-  'code',
-  'variable',
-  'smartContract',
-  'cdpSmartContract',
-  'contractRead',
-  'cdpWallet',
-  'cdpTransaction',
-  'transferFunds',
+  ifElse = 'ifElse',
+  trigger = 'trigger',
+  wallet = 'wallet',
+  privateKey = 'privateKey',
+  transaction = 'transaction',
+  http = 'http',
+  transform = 'transform',
+  condition = 'condition',
+  code = 'code',
+  variable = 'variable',
+  smartContract = 'smartContract',
+  cdpSmartContract = 'cdpSmartContract',
+  contractRead = 'contractRead',
+  cdpWallet = 'cdpWallet',
+  cdpTransaction = 'cdpTransaction',
+  transferFunds = 'transferFunds',
 }
 
 export const NodeDef = z.object({
   id: NodeRef,
   type: z.enum(NodeType),
-  name: z.string(),
-  config: z.unknown().default({}),
+  name: z.string().optional(),
+  config: z.unknown().optional(),
   data: z.unknown().optional(),
   inputs: z.array(Input).default([]),
   outputs: z.array(Output).default([]),
@@ -53,7 +53,7 @@ export class NodeDefClass {
     return this.nodeDef.type
   }
 
-  getName(): string {
+  getName(): string | undefined {
     return this.nodeDef.name
   }
 

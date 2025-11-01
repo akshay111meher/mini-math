@@ -1,0 +1,8 @@
+{
+  "id": "aasdfsdesdffsdfsdssd",
+  "name": "blabla_wf",
+  "version": "1",
+  "nodes": [{ "id": "adsasdasd2jh238723", "type": "trigger", "name": "custom" }],
+  "edges": [],
+  "entry": "adsasdasd2jh238723"
+}

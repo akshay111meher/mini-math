@@ -1,7 +1,7 @@
 {
-  "name": "@mini-math/compiler",
+  "name": "@mini-math/logger",
   "version": "0.1.0",
-  "description": "Compiler",
+  "description": "Logger",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -29,14 +29,12 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "format": "prettier --write ."
   },
-  "dependencies": {
-    "@mini-math/logger": "^0.1.0",
-    "@mini-math/nodes": "^0.1.0",
-    "uuid": "^13.0.0"
-  },
   "devDependencies": {
     "@types/node": "^22.7.5",
-    "@types/uuid": "^10.0.0",
     "tsup": "^8.3.0"
+  },
+  "dependencies": {
+    "pino": "^10.1.0",
+    "pino-pretty": "^13.1.2"
   }
 }

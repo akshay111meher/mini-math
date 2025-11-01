@@ -1,0 +1,23 @@
+{
+  "id": "workflow-id-1234",
+  "name": "zero",
+  "version": "1",
+  "nodes": [
+    { "id": "0000000000000000", "type": "trigger", "name": "0" },
+    { "id": "1111111111111111", "type": "trigger", "name": "1" },
+    { "id": "2222222222222222", "type": "trigger", "name": "2" },
+    { "id": "3333333333333333", "type": "trigger", "name": "3" },
+    { "id": "4444444444444444", "type": "trigger", "name": "4" },
+    { "id": "5555555555555555", "type": "trigger", "name": "5" }
+  ],
+  "edges": [
+    { "id": "aaaaaaaaaaaaaaaa", "from": "0000000000000000", "to": "1111111111111111" },
+    { "id": "bbbbbbbbbbbbbbbb", "from": "0000000000000000", "to": "2222222222222222" },
+    { "id": "cccccccccccccccc", "from": "1111111111111111", "to": "3333333333333333" },
+    { "id": "dddddddddddddddd", "from": "1111111111111111", "to": "4444444444444444" },
+    { "id": "eeeeeeeeeeeeeeee", "from": "3333333333333333", "to": "5555555555555555" },
+    { "id": "ffffffffffffffff", "from": "4444444444444444", "to": "5555555555555555" },
+    { "id": "gggggggggggggggg", "from": "2222222222222222", "to": "5555555555555555" }
+  ],
+  "entry": "0000000000000000"
+}

@@ -6,8 +6,11 @@
     "dev": "turbo run dev --parallel",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
-    "prune": "turbo run clean && rimraf node_modules .turbo  packages/**/node_modules packages/**/.turbo packages/**/tsconfig.build.tsbuildinfo",
-    "clean": "rimraf packages/**/node_modules packages/**/.turbo packages/**/tsconfig.build.tsbuildinfo apps/**/node_modules apps/**/.turbo apps/**/tsconfig.build.tsbuildinfo",
+    "prune": "turbo run clean && rimraf packages/**/node_modules packages/**/.turbo packages/**/tsconfig.build.tsbuildinfo apps/**/node_modules apps/**/.turbo apps/**/tsconfig.build.tsbuildinfo node_modules .turbo",
+    "clean": "turbo run clean && npm run clean:package && npm run clean:apps",
+    "clean:apps": "rimraf apps/**/node_modules apps/**/.turbo apps/**/tsconfig.build.tsbuildinfo",
+    "clean:package": "rimraf packages/**/node_modules packages/**/.turbo packages/**/tsconfig.build.tsbuildinfo",
+    "clean:dist": "rimraf apps/**/dist packages/**/dist",
     "changeset": "changeset",
     "version-packages": "changeset version && npm install",
     "release": "changeset publish",
@@ -40,6 +43,5 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.1",
     "vitest": "^3.2.4"
-  },
-  "dependencies": {}
+  }
 }

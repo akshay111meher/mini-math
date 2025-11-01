@@ -1,6 +1,8 @@
 import { WorkflowDef } from './types.js'
+import { makeLogger } from '@mini-math/logger'
 
-export function hasCycle(workflowDef: WorkflowDef): boolean {
+const logger = makeLogger('helper')
+export function hasCycle(workflowDef: Readonly<WorkflowDef>): boolean {
   const inDegree = new Map<string, number>()
   workflowDef.nodes.forEach((n) => inDegree.set(n.id, 0))
 
@@ -31,7 +33,8 @@ export function hasCycle(workflowDef: WorkflowDef): boolean {
   return visitedCount !== workflowDef.nodes.length
 }
 
-export function bfsTraverse(workflowDef: WorkflowDef): void {
+export function bfsTraverse(workflowDef: Readonly<WorkflowDef>): void {
+  logger.trace(`start bfs tranversal for workflow with id: ${workflowDef.id}`)
   const { nodes, edges, entry } = workflowDef
   const nodeById = new Map(nodes.map((n) => [n.id, n]))
 
@@ -51,7 +54,6 @@ export function bfsTraverse(workflowDef: WorkflowDef): void {
     // }
 
     //TODO: right now only printing the node-id, latter will execute the node
-    console.log(currentNode.id)
 
     // enqueue all neighbours (i.e., edges from currentId → nextId)
     for (const e of edges) {
@@ -64,4 +66,8 @@ export function bfsTraverse(workflowDef: WorkflowDef): void {
       }
     }
   }
+}
+
+export const deepClone = <T>(x: T): T => {
+  return JSON.parse(JSON.stringify(x))
 }

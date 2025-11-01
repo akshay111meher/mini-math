@@ -22,7 +22,7 @@ export abstract class BaseNode implements ExecutableNodeBase {
     return this.nodeDef.inputs
   }
 
-  public readonly(): OutputType[] {
+  public readOutputs(): OutputType[] {
     if (!this.nodeDef.executed) throw new Error(ERROR_CODES.NODE_IS_NOT_EXECUTED)
 
     return this.nodeDef.outputs

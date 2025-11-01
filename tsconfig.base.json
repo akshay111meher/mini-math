@@ -10,7 +10,7 @@
     "declaration": true,
     "sourceMap": true,
     "resolveJsonModule": true,
-    "paths": { "@mini-math/*": ["packages/*/src"], "@mini-app/*": ["app/*/src"] }
+    "paths": { "@mini-math/*": ["packages/*/src"], "@mini-app/*": ["apps/*/src"] }
   },
   "exclude": ["node_modules", "dist"]
 }

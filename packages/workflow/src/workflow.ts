@@ -1,16 +1,95 @@
 import { ERROR_CODES, NodeDefType, NodeFactoryType, ExecutionResult } from '@mini-math/nodes'
-import { ClockResult, WorkflowDef } from './types.js'
-import { bfsTraverse, hasCycle } from './helper.js'
+import { makeLogger } from '@mini-math/logger'
+import { RuntimeDef } from '@mini-math/runtime'
 
+import { ClockResult, WorkflowDef } from './types.js'
+import { bfsTraverse, hasCycle, deepClone } from './helper.js'
+
+const logger = makeLogger('Workflow')
 export class Workflow {
-  private nodeById: Map<string, NodeDefType>
-  private outgoing: Map<string, string[]>
+  private nodeById: Map<string, NodeDefType> = new Map()
+  private outgoing: Map<string, string[]> = new Map()
+  private runtime: RuntimeDef
   private initialized = false
 
   constructor(
     private workflowDef: WorkflowDef,
     private nodeFactory: NodeFactoryType,
+    runtimeDef?: RuntimeDef,
   ) {
+    logger.trace(`started to create workflow. ID: ${this.workflowDef.id}`)
+    if (!runtimeDef) {
+      this.runtime = {
+        queue: [],
+        visited: [],
+        current: null,
+        finished: false,
+      }
+    } else {
+      this.runtime = runtimeDef
+    }
+    this._validateDefinition(this.workflowDef)
+    this._buildIndexes()
+    this._bootstrapRuntime()
+  }
+
+  public id(): string {
+    return this.workflowDef.id
+  }
+
+  private _validateDefinition(wf: WorkflowDef): void {
+    logger.trace(`start valiadate for workflow. ID: ${this.workflowDef.id}`)
+    if (!wf) throw new Error('Workflow definition is required')
+    if (!Array.isArray(wf.nodes) || wf.nodes.length === 0) {
+      throw new Error('Workflow must have at least one node')
+    }
+    if (!wf.entry || typeof wf.entry !== 'string') {
+      throw new Error('Workflow "entry" must be a non-empty string')
+    }
+    if (!Array.isArray(wf.edges)) {
+      throw new Error('Workflow "edges" must be an array')
+    }
+
+    const ids = new Set<string>()
+    const dups: string[] = []
+
+    for (const n of wf.nodes) {
+      if (!n || typeof n.id !== 'string' || n.id.trim() === '') {
+        throw new Error('Every node must have a non-empty string "id"')
+      }
+      if (ids.has(n.id)) dups.push(n.id)
+      ids.add(n.id)
+    }
+
+    if (dups.length > 0) {
+      const uniq = Array.from(new Set(dups))
+      throw new Error(`Duplicate node id(s) found: ${uniq.join(', ')}`)
+    }
+
+    if (!ids.has(wf.entry)) {
+      throw new Error(`Entry node "${wf.entry}" does not exist in nodes`)
+    }
+
+    // Validate edges reference existing nodes
+    wf.edges.forEach((e, i) => {
+      if (!e || typeof e.from !== 'string' || typeof e.to !== 'string') {
+        throw new Error(`Edge[${i}] must have "from" and "to" as strings`)
+      }
+      if (!ids.has(e.from)) {
+        throw new Error(`Edge[${i}] "from"="${e.from}" does not match any node id`)
+      }
+      if (!ids.has(e.to)) {
+        throw new Error(`Edge[${i}] "to"="${e.to}" does not match any node id`)
+      }
+      // If you want to forbid self-loops, uncomment:
+      // if (e.from === e.to) {
+      //   throw new Error(`Edge[${i}] forms a self-loop on node "${e.from}"`)
+      // }
+    })
+  }
+
+  private _buildIndexes(): void {
+    logger.trace(`start building indexes for workflow. ID: ${this.workflowDef.id}`)
     this.nodeById = new Map(this.workflowDef.nodes.map((n) => [n.id, n]))
 
     this.outgoing = new Map<string, string[]>()
@@ -18,27 +97,17 @@ export class Workflow {
       this.outgoing.set(n.id, [])
     }
     for (const e of this.workflowDef.edges) {
-      if (!this.outgoing.has(e.from)) {
-        this.outgoing.set(e.from, [])
-      }
+      if (!this.outgoing.has(e.from)) this.outgoing.set(e.from, [])
       this.outgoing.get(e.from)!.push(e.to)
     }
+  }
 
-    if (!this.workflowDef.runtime) {
-      this.workflowDef.runtime = {
-        queue: [],
-        visited: [],
-        current: null,
-        finished: false,
-      }
-    }
+  private _bootstrapRuntime(): void {
+    logger.trace(`start bootstraping runtime for workflow. ID: ${this.workflowDef.id}`)
 
-    if (
-      this.workflowDef.runtime.queue.length === 0 &&
-      this.workflowDef.runtime.visited.length === 0 &&
-      !this.workflowDef.runtime.finished
-    ) {
-      this.workflowDef.runtime.queue.push(this.workflowDef.entry)
+    const rt = this.runtime
+    if (rt.queue.length === 0 && rt.visited.length === 0 && !rt.finished) {
+      rt.queue.push(this.workflowDef.entry)
     }
   }
 
@@ -48,7 +117,14 @@ export class Workflow {
   }
 
   private _initialize(): void {
-    if (this.initialized) return
+    if (this.initialized) {
+      logger.trace(
+        `workflow. ID: ${this.workflowDef.id} is already initialized. Skipping initialization`,
+      )
+      return
+    }
+
+    logger.trace(`start initializing workflow. ID: ${this.workflowDef.id}`)
     if (hasCycle(this.workflowDef)) {
       throw new Error(ERROR_CODES.CYCLIC_WORKFLOW_DETECTED)
     }
@@ -56,9 +132,10 @@ export class Workflow {
   }
 
   public async clock(): Promise<ClockResult> {
+    logger.trace(`Clocking workflow. ID: ${this.workflowDef.id}`)
     this._initialize()
 
-    const rt = this.workflowDef.runtime
+    const rt = this.runtime
 
     if (rt.finished) {
       return { status: 'error', code: ERROR_CODES.WORKFLOW_IS_ALREADY_EXECUTED }
@@ -92,7 +169,7 @@ export class Workflow {
   }
 
   private _dequeueAndMark(): { nodeId: string; node: NodeDefType } {
-    const rt = this.workflowDef.runtime
+    const rt = this.runtime
 
     const currentNodeId = rt.queue.shift()!
     rt.current = currentNodeId
@@ -128,7 +205,7 @@ export class Workflow {
     this.nodeById.set(node.id, node)
 
     if (execResult.terminateRun === true) {
-      const rt = this.workflowDef.runtime
+      const rt = this.runtime
       rt.queue = []
       rt.current = null
       rt.finished = true
@@ -139,7 +216,7 @@ export class Workflow {
   }
 
   private _scheduleChildren(parentNodeId: string, execResult: ExecutionResult): void {
-    const rt = this.workflowDef.runtime
+    const rt = this.runtime
 
     const neighbors = this.outgoing.get(parentNodeId) ?? []
     let allowedNextIds: string[] = []
@@ -181,7 +258,7 @@ export class Workflow {
   }
 
   private _finalizeIfPossible(): void {
-    const rt = this.workflowDef.runtime
+    const rt = this.runtime
     if (rt.queue.length === 0) {
       rt.current = null
       rt.finished = true
@@ -207,29 +284,35 @@ export class Workflow {
   }
 
   public getCurrentNode(): NodeDefType | null {
-    const rt = this.workflowDef.runtime
+    const rt = this.runtime
     if (!rt.current) return null
     return this.nodeById.get(rt.current) ?? null
   }
 
   public getRuntimeState() {
-    return { ...this.workflowDef.runtime }
+    return { ...this.runtime }
   }
 
-  public serialize(): WorkflowDef {
+  public serialize(): [WorkflowDef, RuntimeDef] {
     const updatedNodes = this.workflowDef.nodes.map((origNode) => {
-      const liveNode = this.nodeById.get(origNode.id)
-      return liveNode ?? origNode
+      const liveNode = this.nodeById.get(origNode.id) ?? origNode
+      return deepClone(liveNode)
     })
 
-    return {
+    const wf: WorkflowDef = deepClone({
       ...this.workflowDef,
       nodes: updatedNodes,
-    }
+    })
+
+    const rt: RuntimeDef = deepClone(this.runtime)
+
+    return [wf, rt]
   }
 
   public isFinished(): boolean {
-    const rt = this.workflowDef.runtime
+    const rt = this.runtime
+    logger.trace(`Workflow ID: ${this.workflowDef.id} rt.finished=${rt.finished}`)
+    logger.trace(`Workflow ID: ${this.workflowDef.id} rt.queue.length=${rt.queue.length}`)
     return rt.finished === true || rt.queue.length === 0
   }
 }
