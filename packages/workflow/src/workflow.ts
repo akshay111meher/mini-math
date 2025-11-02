@@ -318,11 +318,3 @@ export class Workflow {
     return rt.finished === true || rt.queue.length === 0
   }
 }
-
-export type WorkflowResult = { status: boolean; message: string; workflow: WorkflowDef | null }
-
-export abstract class WorkflowStore {
-  public abstract get(workflowId: string, initial?: Partial<WorkflowDef>): Promise<WorkflowResult>
-
-  public abstract update(workflowId: string, patch: Partial<WorkflowDef>): Promise<WorkflowResult>
-}

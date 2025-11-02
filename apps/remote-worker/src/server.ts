@@ -1,20 +1,41 @@
 import { z } from 'zod'
 import express, { Request, Response } from 'express'
 import swaggerUi from 'swagger-ui-express'
-import { v4 as uuidv4 } from 'uuid'
 
 import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi'
 
-import { Workflow, WorkflowSchema, WorkflowStore, WorkflowCore } from '@mini-math/workflow'
+import {
+  Workflow,
+  WorkflowSchema,
+  WorkflowStore,
+  WorkflowCore,
+  WorkflowDef,
+} from '@mini-math/workflow'
 import { NodeFactoryType } from '@mini-math/compiler'
-import { RuntimeStore } from '@mini-math/runtime'
+import { RuntimeDef, RuntimeStore } from '@mini-math/runtime'
 import { makeLogger } from '@mini-math/logger'
 
-import { openapiDoc } from './swagger.js'
-import { validateBody } from './validate.js'
+import { ID, openapiDoc } from './swagger.js'
+import {
+  assignRequestId,
+  createNewRuntime,
+  validateBody,
+  createNewWorkflow,
+  revertIfNoWorkflow,
+  revertIfNoRuntime,
+} from './middlewares/index.js'
+import { IQueue } from '@mini-math/queue'
 
 extendZodWithOpenApi(z)
 
+declare module 'express-serve-static-core' {
+  interface Request {
+    id?: string
+    workflowId?: string
+    workflow?: WorkflowDef
+    runtime?: RuntimeDef
+  }
+}
 export class Server {
   private readonly app = express()
   private readonly logger = makeLogger('RemoteServer')
@@ -23,6 +44,7 @@ export class Server {
     private workflowStore: WorkflowStore,
     private runtimeStore: RuntimeStore,
     private nodeFactory: NodeFactoryType,
+    private queue: IQueue<[WorkflowDef, RuntimeDef]>,
     private readonly port: number | string = process.env.PORT || 3000,
   ) {
     this.configureMiddleware()
@@ -44,22 +66,43 @@ export class Server {
   }
 
   private configureRoutes(): void {
-    this.app.post('/run', validateBody(WorkflowSchema), this.handleRun)
+    this.app.post(
+      '/run',
+      validateBody(WorkflowSchema),
+      createNewRuntime(this.runtimeStore),
+      this.handleRun,
+    )
     this.app.post('/validate', validateBody(WorkflowCore), this.handleValidate)
     this.app.post('/compile', validateBody(WorkflowCore), this.handleCompile)
-    this.app.post('/load', validateBody(WorkflowCore), this.handleLoad)
+    this.app.post(
+      '/load',
+      validateBody(WorkflowCore),
+      assignRequestId,
+      createNewWorkflow(this.workflowStore),
+      createNewRuntime(this.runtimeStore),
+      this.handleLoad,
+    )
+    this.app.post(
+      '/clock',
+      validateBody(ID),
+      revertIfNoWorkflow(this.workflowStore),
+      revertIfNoRuntime(this.runtimeStore),
+      this.handleClockWorkflow,
+    )
+    this.app.post(
+      '/initiate',
+      validateBody(ID),
+      revertIfNoWorkflow(this.workflowStore),
+      revertIfNoRuntime(this.runtimeStore),
+      this.handleInitiateWorkflow,
+    )
   }
 
   // Handlers as arrow functions to preserve `this`
   private handleRun = async (req: Request, res: Response) => {
-    const wfId: string = req.body.id // TODO: ensure your schema guarantees this
-    const { runtime, status, message } = await this.runtimeStore.get(wfId)
+    const runtime = req.runtime
 
-    if (!status || !runtime) {
-      return res.status(501).json({ success: false, message })
-    }
-
-    let workflow = new Workflow(req.body, this.nodeFactory, runtime.serialize())
+    let workflow = new Workflow(req.body, this.nodeFactory, runtime)
     this.logger.trace(`Received workflow: ${workflow.id()}`)
 
     if (workflow.isFinished()) {
@@ -101,29 +144,49 @@ export class Server {
   }
 
   private handleLoad = async (req: Request, res: Response) => {
-    const id = uuidv4()
-
-    // Persist a new workflow with this id (req.body is the “core” without id)
-    const wfRes = await this.workflowStore.get(id, req.body)
-    if (!wfRes.status || !wfRes.workflow) {
-      return res.status(400).json({ success: false, message: wfRes.message })
-    }
-    const wfDef = wfRes.workflow
-
-    // Create or fetch runtime for this workflow
-    const rtRes = await this.runtimeStore.get(id)
-    if (!rtRes.status || !rtRes.runtime) {
-      return res.status(500).json({ success: false, message: rtRes.message })
-    }
-    const runtime = rtRes.runtime
-
     // Build the engine from the persisted workflow (not req.body!)
-    const workflow = new Workflow(wfDef, this.nodeFactory, runtime.serialize())
+
+    const wfDef = req.workflow as WorkflowDef // TODO: enfore this by types
+    const rtDef = req.runtime
+
+    const workflow = new Workflow(wfDef, this.nodeFactory, rtDef)
     this.logger.info(`Loaded workflow: ${workflow.id()}`)
 
-    // const [wfSnap, rtSnap] = workflow.serialize()
-    // return res.status(201).json({ success: true, id, data: wfSnap, runtime: rtSnap })
+    // TODO: fix this from types perspective
+    return res.status(201).json({ id: req.workflowId })
+  }
 
-    return res.status(201).json({ id })
+  private handleClockWorkflow = async (req: Request, res: Response) => {
+    const wfDef = req.workflow as WorkflowDef // TODO: enfore this by types
+    const rtDef = req.runtime
+
+    const workflow = new Workflow(wfDef, this.nodeFactory, rtDef)
+    if (workflow.isFinished()) {
+      return res
+        .status(409)
+        .json({ success: false, message: `Workflow ID: ${workflow.id()} already fullfilled` })
+    }
+
+    await workflow.clock()
+    const [_wfDef, _rtDef] = workflow.serialize()
+    this.workflowStore.update(workflow.id(), _wfDef)
+    this.runtimeStore.update(workflow.id(), _rtDef)
+
+    return res.json([_wfDef, _rtDef])
+  }
+
+  private handleInitiateWorkflow = async (req: Request, res: Response) => {
+    const wfDef = req.workflow as WorkflowDef // TODO: enfore this by types
+    const rtDef = req.runtime as RuntimeDef // TODO: enfore this by types
+
+    const workflow = new Workflow(wfDef, this.nodeFactory, rtDef)
+    if (workflow.isFinished()) {
+      return res
+        .status(409)
+        .json({ success: false, message: `Workflow ID: ${workflow.id()} already fullfilled` })
+    }
+
+    this.queue.enqueue([wfDef, rtDef])
+    return res.json({ success: true })
   }
 }

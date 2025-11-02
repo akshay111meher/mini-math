@@ -2,6 +2,9 @@ import { z } from 'zod'
 import { OpenAPIRegistry, OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi'
 import { WorkflowSchema, WorkflowCore } from '@mini-math/workflow'
 
+const ONLY_DEV = 'Only dev environment and for debugging. Do not integrate with UI'
+const PROD_READY = 'Supported in production'
+
 export const StandardResponse = z
   .object({
     success: z.literal(false),
@@ -21,6 +24,7 @@ const registry = new OpenAPIRegistry()
 
 registry.registerPath({
   method: 'post',
+  tags: [PROD_READY],
   path: '/validate',
   summary: 'Validate Workflow Schema',
   request: {
@@ -45,6 +49,7 @@ registry.registerPath({
 registry.registerPath({
   method: 'post',
   path: '/load',
+  tags: [PROD_READY],
   summary: 'Load Workflow Schema into engine',
   request: {
     body: {
@@ -68,6 +73,7 @@ registry.registerPath({
 registry.registerPath({
   method: 'post',
   path: '/compile',
+  tags: [PROD_READY],
   summary: 'Compile the workflow',
   request: {
     body: {
@@ -88,7 +94,9 @@ registry.registerPath({
 registry.registerPath({
   method: 'post',
   path: '/run',
-  summary: 'Run the workflow',
+  tags: [ONLY_DEV],
+  summary:
+    'Run the workflow and wait for the workflow output in the same http response. Not to be used in the production',
   request: {
     body: {
       content: {
@@ -108,6 +116,54 @@ registry.registerPath({
     },
     501: {
       description: 'Internal Server Error',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+  },
+})
+
+registry.registerPath({
+  method: 'post',
+  path: '/clock',
+  tags: [ONLY_DEV],
+  summary: 'Clock existing workflow clocked by one unit',
+  request: {
+    body: {
+      content: {
+        'application/json': { schema: ID },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Return workflow clocked by one unit',
+      content: { 'application/json': { schema: WorkflowSchema } },
+    },
+    400: {
+      description: 'error',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+  },
+})
+
+registry.registerPath({
+  method: 'post',
+  path: '/initiate',
+  tags: [PROD_READY],
+  summary: 'Initiate the workflow in backend. (Does not return the output of any node tough)',
+  request: {
+    body: {
+      content: {
+        'application/json': { schema: ID },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Returns result of workflow initiation',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+    400: {
+      description: 'error',
       content: { 'application/json': { schema: StandardResponse } },
     },
   },

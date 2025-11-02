@@ -23,6 +23,7 @@
     "@asteasolutions/zod-to-openapi": "^8.1.0",
     "@mini-math/compiler": "^0.1.0",
     "@mini-math/logger": "^0.1.0",
+    "@mini-math/queue": "^0.1.0",
     "@mini-math/runtime": "^0.1.0",
     "@mini-math/workflow": "^0.1.0",
     "express": "^5.1.0",

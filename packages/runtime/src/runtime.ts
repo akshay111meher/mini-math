@@ -26,11 +26,3 @@ export class Runtime {
     }
   }
 }
-
-export type RuntimeResult = { status: boolean; message: string; runtime: Runtime | null }
-
-export abstract class RuntimeStore {
-  public abstract get(workflowId: string, initial?: Partial<RuntimeDef>): Promise<RuntimeResult>
-
-  public abstract update(workflowId: string, patch: Partial<RuntimeDef>): Promise<RuntimeResult>
-}

@@ -1,15 +1,18 @@
 // src/main.ts
 import { NodeFactory } from '@mini-math/compiler'
 import { Server } from './server.js'
-import { InMemoryRuntimeStore } from '@mini-math/runtime'
-import { InMemoryWorkflowStore } from '@mini-math/workflow'
+import { InMemoryRuntimeStore, RuntimeDef } from '@mini-math/runtime'
+import { InMemoryWorkflowStore, WorkflowDef } from '@mini-math/workflow'
+import { InMemoryQueue } from '@mini-math/queue'
 
-const workflowStore = new InMemoryWorkflowStore()
-const runtimeStore = new InMemoryRuntimeStore()
 const nodeFactory = new NodeFactory()
 
+const queue = new InMemoryQueue<[WorkflowDef, RuntimeDef]>()
+const workflowStore = new InMemoryWorkflowStore()
+const runtimeStore = new InMemoryRuntimeStore()
+
 const port = Number(process.env.PORT) || 3000
-const server = new Server(workflowStore, runtimeStore, nodeFactory, port)
+const server = new Server(workflowStore, runtimeStore, nodeFactory, queue, port)
 
 await server.start()
 
