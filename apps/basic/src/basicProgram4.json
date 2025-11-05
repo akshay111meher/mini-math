@@ -1,0 +1,55 @@
+{
+  "id": "workflow-id-1234",
+  "name": "zero",
+  "version": "1",
+  "nodes": [
+    {
+      "id": "0000000000000000",
+      "type": "trigger",
+      "name": "0",
+      "config": {
+        "triggerType": "manual",
+        "description": "",
+        "inputs": [],
+        "outputs": [
+          {
+            "name": "main",
+            "type": "main"
+          }
+        ],
+        "name": "Trigger",
+        "uiMode": "manual"
+      },
+      "inputs": [],
+      "outputs": []
+    },
+    {
+      "id": "1111111111111111",
+      "type": "variable",
+      "name": "1",
+      "config": {
+        "variableName": "xyz",
+        "variableValue": "loremipsum",
+        "valueType": "string",
+        "inputs": [
+          {
+            "name": "main",
+            "type": "main"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "main",
+            "type": "main"
+          }
+        ],
+        "name": "Set Variable",
+        "uiMode": "manual"
+      },
+      "inputs": [],
+      "outputs": []
+    }
+  ],
+  "edges": [{ "id": "aaaaaaaaaaaaaaaa", "from": "0000000000000000", "to": "1111111111111111" }],
+  "entry": "0000000000000000"
+}
