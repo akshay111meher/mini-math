@@ -13,13 +13,12 @@ export interface Value {
 
 export type GlobalStateType = Record<string, Value>
 
-const VariableNodeConfigSchema = z
-  .object({
-    variableName: z.string(),
-    variableValue: z.string(),
-    valueType: z.string(),
-  })
-  .strict()
+const VariableNodeConfigSchema = z.object({
+  variableName: z.string(),
+  variableValue: z.string(),
+  valueType: z.string(),
+})
+
 type VariableNodeConfig = z.infer<typeof VariableNodeConfigSchema>
 
 export class VariableNode extends BaseNode {

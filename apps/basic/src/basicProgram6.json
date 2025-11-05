@@ -1,0 +1,69 @@
+{
+  "id": "workflow-id-1234",
+  "name": "zero",
+  "version": "1",
+  "nodes": [
+    {
+      "id": "node_1762360728055_s3th4b1uw",
+      "type": "trigger",
+      "position": {
+        "x": 327,
+        "y": 193
+      },
+      "config": {
+        "triggerType": "manual",
+        "description": "",
+        "inputs": [],
+        "outputs": [
+          {
+            "name": "main",
+            "type": "main"
+          }
+        ],
+        "name": "Trigger",
+        "uiMode": "manual"
+      },
+      "inputs": [],
+      "outputs": []
+    },
+    {
+      "id": "node_1762360731603_jjm733ktj",
+      "type": "http",
+      "position": {
+        "x": 583,
+        "y": 193
+      },
+      "config": {
+        "method": "GET",
+        "url": "https://testbackend.justfortesting.me/health",
+        "headers": [],
+        "body": "",
+        "resultVariableName": "apiResultAbhijat",
+        "inputs": [
+          {
+            "name": "main",
+            "type": "main"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "main",
+            "type": "main"
+          }
+        ],
+        "name": "Call API",
+        "uiMode": "manual"
+      },
+      "inputs": [],
+      "outputs": []
+    }
+  ],
+  "edges": [
+    {
+      "id": "conn_1762360733490_dbnpy2i36",
+      "from": "node_1762360728055_s3th4b1uw",
+      "to": "node_1762360731603_jjm733ktj"
+    }
+  ],
+  "entry": "node_1762360728055_s3th4b1uw"
+}

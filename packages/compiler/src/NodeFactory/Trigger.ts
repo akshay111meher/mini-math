@@ -3,11 +3,9 @@ import { makeLogger, Logger } from '@mini-math/logger'
 import { v4 as uuidv4 } from 'uuid'
 import { z } from 'zod'
 
-const TriggerConfigSchema = z
-  .object({
-    triggerType: z.string().optional(), // e.g. "manual", "webhook", etc.
-  })
-  .strict()
+const TriggerConfigSchema = z.object({
+  triggerType: z.string().optional(), // e.g. "manual", "webhook", etc.
+})
 type TriggerConfig = z.infer<typeof TriggerConfigSchema>
 
 export class TriggerNode extends BaseNode {
@@ -18,6 +16,7 @@ export class TriggerNode extends BaseNode {
   }
 
   protected async _nodeExecutionLogic(): Promise<OutputType[]> {
+    this.logger.debug('Started trigger node execution')
     const raw: unknown = this.nodeDef.data ?? this.nodeDef.config ?? {}
     const nodeConfig: TriggerConfig = TriggerConfigSchema.parse(raw)
 
