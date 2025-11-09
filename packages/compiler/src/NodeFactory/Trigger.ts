@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { z } from 'zod'
 
 const TriggerConfigSchema = z.object({
-  triggerType: z.string().optional(), // e.g. "manual", "webhook", etc.
+  triggerType: z.string().optional(),
 })
 type TriggerConfig = z.infer<typeof TriggerConfigSchema>
 
