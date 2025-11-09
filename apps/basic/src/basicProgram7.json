@@ -1,0 +1,98 @@
+{
+  "id": "workflow-238763487653847",
+  "name": "New Workflow",
+  "version": "1",
+  "nodes": [
+    {
+      "id": "node_1762360728055_s3th4b1uw",
+      "type": "trigger",
+      "position": {
+        "x": 327,
+        "y": 193
+      },
+      "config": {
+        "triggerType": "manual",
+        "description": "",
+        "inputs": [],
+        "outputs": [
+          {
+            "name": "main",
+            "type": "main"
+          }
+        ],
+        "name": "Trigger",
+        "uiMode": "manual"
+      },
+      "inputs": [],
+      "outputs": []
+    },
+    {
+      "id": "node_1762360731603_jjm733ktj",
+      "type": "http",
+      "position": {
+        "x": 551.984962406015,
+        "y": 458.0375939849627
+      },
+      "config": {
+        "method": "GET",
+        "url": "https://testbackend.justfortesting.me/health",
+        "headers": [],
+        "body": "",
+        "resultVariableName": "apiResultAbhijat",
+        "inputs": [
+          {
+            "name": "main",
+            "type": "main"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "main",
+            "type": "main"
+          }
+        ],
+        "name": "Call API",
+        "uiMode": "manual"
+      },
+      "inputs": [],
+      "outputs": []
+    },
+    {
+      "id": "node_1762362946580_ujb618q2l",
+      "type": "variable",
+      "position": {
+        "x": 595.8646616541358,
+        "y": 185.15037593984982
+      },
+      "config": {
+        "variableName": "qwerty",
+        "variableValue": "999",
+        "valueType": "number",
+        "inputs": [
+          {
+            "name": "main",
+            "type": "main"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "main",
+            "type": "main"
+          }
+        ],
+        "name": "Set Variable",
+        "uiMode": "manual"
+      },
+      "inputs": [],
+      "outputs": []
+    }
+  ],
+  "edges": [
+    {
+      "id": "conn_1762362949647_eer89045r",
+      "from": "node_1762360728055_s3th4b1uw",
+      "to": "node_1762362946580_ujb618q2l"
+    }
+  ],
+  "entry": "node_1762360728055_s3th4b1uw"
+}
