@@ -16,6 +16,7 @@ import { CdpWalletNode } from './CdpWallet.js'
 import { CdpTransactionNode } from './CdpTransaction.js'
 import { TransferFundsNode } from './TransferFunds.js'
 import { TestNode } from './Test.js'
+import { CoinGekkoNode } from './CoinGekko.js'
 
 export interface NodeFactoryType {
   make(node: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState): ExecutableNodeBase
@@ -56,6 +57,8 @@ export class NodeFactory implements NodeFactoryType {
       return new TransferFundsNode(node, workflowGlobalStateRef)
     } else if (node.type == NodeType.test) {
       return new TestNode(node, workflowGlobalStateRef)
+    } else if (node.type == NodeType.coingeckoFetchPrice) {
+      return new CoinGekkoNode(node, workflowGlobalStateRef)
     }
     throw new Error('node.type not defined')
   }

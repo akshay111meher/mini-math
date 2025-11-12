@@ -22,6 +22,7 @@ export enum NodeType {
   cdpTransaction = 'cdpTransaction',
   transferFunds = 'transferFunds',
   test = 'test',
+  coingeckoFetchPrice = 'coingeckoFetchPrice',
 }
 
 export const ExecutionTimestamp = z.number().int().nonnegative().brand<'UnixEpochMs'>()
