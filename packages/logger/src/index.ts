@@ -1,4 +1,6 @@
 import pino from 'pino'
+import { config } from 'dotenv'
+config()
 
 type Level = 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace'
 export interface Logger {
