@@ -14,6 +14,22 @@ declare module 'express-serve-static-core' {
   }
 }
 
+export function revertIfNotWorkflowOwner(workflowStore: WorkflowStore): RequestHandler {
+  return async (req, res, next) => {
+    const wfId = req.workflowId ?? (req.body?.id as string | undefined)
+    if (!wfId) {
+      return res.status(400).json({ success: false, message: 'workflow id is required' })
+    }
+
+    const wf = await workflowStore.get(wfId)
+    if (wf.owner.toLowerCase() == req.user.address.toLowerCase()) {
+      return next()
+    }
+
+    return res.status(401).json({ success: false, message: `workflow "${wfId}" is not authorized` })
+  }
+}
+
 export function revertIfNoWorkflow(workflowStore: WorkflowStore): RequestHandler {
   return async (req, res, next) => {
     const wfId = req.workflowId ?? (req.body?.id as string | undefined)
@@ -49,7 +65,7 @@ export function createNewWorkflow(workflowStore: WorkflowStore): RequestHandler 
 
     try {
       // Expect req.body to be WorkflowCore (no id inside); store will validate + inject id.
-      const def = await workflowStore.create(wfId, req.body)
+      const def = await workflowStore.create(wfId, req.body, req.user.address)
       req.workflow = def
       res.locals.workflowDef = def
       return next()

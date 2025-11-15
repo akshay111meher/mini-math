@@ -31,6 +31,7 @@ const workflowJson: WorkflowDef = {
   nodes,
   edges,
   entry: basicProgramJson.nodes[0].id,
+  owner: '0xabcdabcdabcdabcdabcdabcdabcdabcdabcdabcd',
 }
 
 const printerNodeFactory = new PrinterNodeFactory()

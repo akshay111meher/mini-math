@@ -1,6 +1,7 @@
 // redis-store.ts
 import { createClient, SetOptions } from 'redis'
-import { KeyValueOptions, KeyValueStore } from '@mini-math/keystore'
+import { KeyValueStore } from '@mini-math/keystore'
+import { Logger, makeLogger } from '@mini-math/logger'
 
 type RedisClient = ReturnType<typeof createClient>
 /**
@@ -8,10 +9,23 @@ type RedisClient = ReturnType<typeof createClient>
  */
 export class RedisStore extends KeyValueStore {
   private readonly client: RedisClient
+  private logger: Logger
   constructor(url: string) {
     super()
+    this.logger = makeLogger('Redis Store')
     this.client = createClient({ url })
+
+    this.client.on('error', (err) => {
+      this.logger.error('[redis] client error:', err)
+    })
   }
+
+  protected async initialize(): Promise<void> {
+    if (!this.client.isOpen) {
+      await this.client.connect()
+    }
+  }
+
   protected async _get(key: string): Promise<string | null> {
     return await this.client.get(key)
   }

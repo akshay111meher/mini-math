@@ -1,11 +1,12 @@
 import { z } from 'zod'
 import { OpenAPIRegistry, OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi'
 import { WorkflowSchema, WorkflowCore } from '@mini-math/workflow'
+import { GrantOrRevokeRoleSchema } from '@mini-math/rbac'
 
 const ONLY_DEV = 'Only dev environment and for debugging. Do not integrate with UI'
 const PROD_READY = 'Supported in production'
-const WIP = 'Work in progress. Review and enhancements expected'
 const AUTH = 'Authentication'
+const RBAC = 'RBAC'
 
 export const StandardResponse = z
   .object({
@@ -71,6 +72,7 @@ registry.registerPath({
       content: { 'application/json': { schema: StandardResponse } },
     },
   },
+  security: [{ cookieAuth: [] }],
 })
 
 registry.registerPath({
@@ -132,6 +134,7 @@ registry.registerPath({
       content: { 'application/json': { schema: StandardResponse } },
     },
   },
+  security: [{ cookieAuth: [] }],
 })
 
 registry.registerPath({
@@ -164,6 +167,7 @@ registry.registerPath({
       content: { 'application/json': { schema: StandardResponse } },
     },
   },
+  security: [{ cookieAuth: [] }],
 })
 
 registry.registerPath({
@@ -188,6 +192,7 @@ registry.registerPath({
       content: { 'application/json': { schema: StandardResponse } },
     },
   },
+  security: [{ cookieAuth: [] }],
 })
 
 registry.registerPath({
@@ -212,6 +217,7 @@ registry.registerPath({
       content: { 'application/json': { schema: WorkflowSchema } },
     },
   },
+  security: [{ cookieAuth: [] }],
 })
 
 export const SiweNonceResponse = z.object({ nonce: z.string() }).openapi('SiweNonceResponse')
@@ -253,7 +259,7 @@ export const VerifyResponse = z
 registry.registerPath({
   method: 'post',
   path: '/siwe/verify',
-  tags: [WIP, AUTH],
+  tags: [AUTH],
   summary: 'Verify SIWE message + signature; establish session (cookie)',
   request: {
     body: {
@@ -326,6 +332,56 @@ registry.registerPath({
     200: {
       description: 'Returns current user or null if not logged in',
       content: { 'application/json': { schema: MeResponse } },
+    },
+  },
+  security: [{ cookieAuth: [] }],
+})
+
+registry.registerPath({
+  method: 'post',
+  path: '/grantRole',
+  tags: [RBAC],
+  summary: 'Grants Role to new users',
+  request: {
+    body: {
+      content: {
+        'application/json': { schema: GrantOrRevokeRoleSchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'When role is successfully granted',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+    401: {
+      description: 'When role is not granted',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+  },
+  security: [{ cookieAuth: [] }],
+})
+
+registry.registerPath({
+  method: 'post',
+  path: '/revokeRole',
+  tags: [RBAC],
+  summary: 'Revoke role of a users',
+  request: {
+    body: {
+      content: {
+        'application/json': { schema: GrantOrRevokeRoleSchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'When role is successfully revoked',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+    401: {
+      description: 'When role is not revoked',
+      content: { 'application/json': { schema: StandardResponse } },
     },
   },
   security: [{ cookieAuth: [] }],

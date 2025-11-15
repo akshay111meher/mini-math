@@ -6,6 +6,12 @@ const logger = makeLogger('auth-routes')
 
 import 'express-session'
 
+export interface SessionUser {
+  address: `0x${string}`
+  chainId: number
+  loggedInAt: string
+}
+
 const VerifyBody = z.object({
   message: z.string().min(1),
   signature: z.string().min(1),
@@ -14,11 +20,7 @@ const VerifyBody = z.object({
 declare module 'express-session' {
   interface SessionData {
     nonce?: string
-    user?: {
-      address: `0x${string}`
-      chainId: number
-      loggedInAt: string
-    }
+    user?: SessionUser
   }
 }
 

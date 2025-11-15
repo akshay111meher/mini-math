@@ -17,8 +17,11 @@ export const WorkflowCore = z
   .openapi('WorkflowCore')
 
 export type WorkflowCoreDef = z.infer<typeof WorkflowCore>
+const WorkflowOwnerRef = z.string()
 
-export const WorkflowSchema = WorkflowCore.extend({ id: WorkflowRef }).openapi('Workflow')
+export const WorkflowSchema = WorkflowCore.extend({ id: WorkflowRef })
+  .extend({ owner: WorkflowOwnerRef })
+  .openapi('Workflow')
 export type WorkflowDef = z.infer<typeof WorkflowSchema>
 
 export interface ClockOk {

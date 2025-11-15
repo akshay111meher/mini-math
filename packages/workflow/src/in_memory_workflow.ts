@@ -12,9 +12,10 @@ import { deepClone } from '@mini-math/utils'
 export class InMemoryWorkflowStore extends WorkflowStore {
   private readonly store = new Map<string, WorkflowDef>()
 
-  public async create(
+  public override async create(
     workflowId: string,
     core: z.infer<typeof WorkflowCore>,
+    owner: string,
   ): Promise<WorkflowDef> {
     if (!workflowId) throw new WorkflowStoreError('VALIDATION', 'workflowId is required')
 
@@ -24,7 +25,7 @@ export class InMemoryWorkflowStore extends WorkflowStore {
 
     try {
       const parsedCore = WorkflowCore.parse(core)
-      const full = WorkflowSchema.parse({ ...parsedCore, id: workflowId })
+      const full = WorkflowSchema.parse({ ...parsedCore, id: workflowId, owner })
       this.store.set(workflowId, full)
       return deepClone(full)
     } catch (err) {

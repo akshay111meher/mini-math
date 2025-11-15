@@ -1,6 +1,12 @@
 // Queue interface supporting callback-based strategy
 export interface IQueue<T> {
   /**
+   * Initialize the queue connection / resources.
+   * Safe to call multiple times; initialization will only run once.
+   */
+  init(): Promise<void>
+
+  /**
    * Enqueue an item into the queue.
    * Returns a unique message ID for tracking.
    */

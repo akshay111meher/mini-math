@@ -19,6 +19,10 @@ export class InMemoryQueue<T> implements IQueue<T> {
   private rrIndex = 0 // round-robin pointer
   private kicking = false // prevent re-entrant kick storms
 
+  async init(): Promise<void> {
+    return
+  }
+
   async enqueue(item: T): Promise<string> {
     this.ensureOpen()
     const messageId = this.generateId()

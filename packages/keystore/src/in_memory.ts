@@ -23,6 +23,10 @@ export class InMemoryKeyValueStore extends KeyValueStore {
       setInterval(() => this.gc(), this.cleanupEveryMs)
   }
 
+  protected async initialize(): Promise<void> {
+    return
+  }
+
   protected async _get(key: string): Promise<string | null> {
     const e = this.store.get(key)
     if (!e) return null

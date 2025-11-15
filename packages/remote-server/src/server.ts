@@ -15,6 +15,8 @@ import {
 } from '@mini-math/workflow'
 import { NodeFactoryType } from '@mini-math/compiler'
 import { RuntimeDef, RuntimeStore } from '@mini-math/runtime'
+import { getRoleAdmin, GrantOrRevokeRoleSchema, Role, RoleStore } from '@mini-math/rbac'
+
 import { makeLogger } from '@mini-math/logger'
 
 import { ID, openapiDoc } from './swagger.js'
@@ -28,7 +30,8 @@ import {
   attachUserIfPresent,
   getNonce,
   requireAuth,
-  session_printer,
+  revertIfNotWorkflowOwner,
+  revertIfNoRole,
 } from './middlewares/index.js'
 import { IQueue } from '@mini-math/queue'
 import { logout, verifySiwe } from './auth.js'
@@ -38,15 +41,6 @@ import { KeyValueStore } from '@mini-math/keystore'
 
 extendZodWithOpenApi(z)
 
-declare module 'express-serve-static-core' {
-  interface Request {
-    id?: string
-    workflowId?: string
-    workflow?: WorkflowDef
-    runtime?: RuntimeDef
-  }
-}
-
 export class Server {
   private readonly app = express()
   private readonly logger = makeLogger('RemoteServer')
@@ -55,6 +49,7 @@ export class Server {
     private workflowStore: WorkflowStore,
     private runtimeStore: RuntimeStore,
     private nodeFactory: NodeFactoryType,
+    private roleStore: RoleStore,
     private queue: IQueue<[WorkflowDef, RuntimeDef]>,
     private kvs: KeyValueStore,
     private domainWithPort: string,
@@ -82,7 +77,6 @@ export class Server {
       defaultTTLSeconds: 60 * 60 * 24,
     })
 
-    this.app.use(session_printer)
     this.app.use(express.json())
     this.app.use(helmet())
 
@@ -125,17 +119,34 @@ export class Server {
   }
 
   private configureRoutes(): void {
+    const mustHaveRole = revertIfNoRole(this.roleStore)
+
     this.app.post(
       '/run',
+      requireAuth(),
+      mustHaveRole([Role.Developer]),
       validateBody(WorkflowSchema),
       createNewWorkflow(this.workflowStore),
       createNewRuntime(this.runtimeStore),
       this.handleRun,
     )
+
+    this.app.post(
+      '/clock',
+      requireAuth(),
+      mustHaveRole([Role.Developer]),
+      validateBody(ID),
+      revertIfNotWorkflowOwner(this.workflowStore),
+      revertIfNoWorkflow(this.workflowStore),
+      revertIfNoRuntime(this.runtimeStore),
+      this.handleClockWorkflow,
+    )
+
     this.app.post('/validate', validateBody(WorkflowCore), this.handleValidate)
     this.app.post('/compile', validateBody(WorkflowCore), this.handleCompile)
     this.app.post(
       '/load',
+      requireAuth(),
       validateBody(WorkflowCore),
       assignRequestId,
       createNewWorkflow(this.workflowStore),
@@ -143,22 +154,19 @@ export class Server {
       this.handleLoad,
     )
     this.app.post(
-      '/clock',
-      validateBody(ID),
-      revertIfNoWorkflow(this.workflowStore),
-      revertIfNoRuntime(this.runtimeStore),
-      this.handleClockWorkflow,
-    )
-    this.app.post(
       '/initiate',
+      requireAuth(),
       validateBody(ID),
+      revertIfNotWorkflowOwner(this.workflowStore),
       revertIfNoWorkflow(this.workflowStore),
       revertIfNoRuntime(this.runtimeStore),
       this.handleInitiateWorkflow,
     )
     this.app.post(
       '/fetch',
+      requireAuth(),
       validateBody(ID),
+      revertIfNotWorkflowOwner(this.workflowStore),
       revertIfNoWorkflow(this.workflowStore),
       revertIfNoRuntime(this.runtimeStore),
       this.handleFetchWorkflowResult,
@@ -166,7 +174,20 @@ export class Server {
 
     this.app.get('/siwe/nonce', getNonce())
     this.app.post('/siwe/verify', verifySiwe(this.domainWithPort))
-    this.app.post('/logout', logout())
+    this.app.post('/logout', requireAuth(), logout())
+
+    this.app.post(
+      '/grantRole',
+      requireAuth(),
+      validateBody(GrantOrRevokeRoleSchema),
+      this.handleGrantRole,
+    )
+    this.app.post(
+      '/revokeRole',
+      requireAuth(),
+      validateBody(GrantOrRevokeRoleSchema),
+      this.handleRevokeRole,
+    )
 
     this.app.get('/me', requireAuth(), (req, res) => {
       if (req?.session?.user) {
@@ -175,6 +196,56 @@ export class Server {
         return res.status(404).json({ user: null })
       }
     })
+  }
+
+  private handleGrantRole = async (req: Request, res: Response) => {
+    this.logger.trace(
+      `User: ${req.user.address} trying to grant ${req.body.role} to ${req.body.user}`,
+    )
+    const callerRoles = await this.roleStore.getRoles(req.user.address)
+    this.logger.trace(`Roles available with ${req.user.address}: ${JSON.stringify(callerRoles)}`)
+    const grantingRole = req.body.role
+    const roleAdmin = getRoleAdmin(grantingRole)
+    this.logger.trace(`${roleAdmin} is on top of role: ${grantingRole}`)
+
+    if (roleAdmin && callerRoles.includes(roleAdmin)) {
+      await this.roleStore.addRoleBySchema(req.body)
+
+      return res.status(200).json({
+        success: true,
+        message: `User: ${req.user.address} granted ${req.body.role} to ${req.body.user}`,
+      })
+    } else {
+      return res.status(401).json({
+        success: false,
+        message: `User: ${req.user.address} is not allowed to grant ${req.body.role} to ${req.body.user}`,
+      })
+    }
+  }
+
+  private handleRevokeRole = async (req: Request, res: Response) => {
+    this.logger.trace(
+      `User: ${req.user.address} trying to revoke ${req.body.role} from ${req.body.user}`,
+    )
+    const callerRoles = await this.roleStore.getRoles(req.user.address)
+    this.logger.trace(`Roles available with ${req.user.address}: ${JSON.stringify(callerRoles)}`)
+
+    const revokingRole = req.body.role
+    const roleAdmin = getRoleAdmin(revokingRole)
+    this.logger.trace(`${roleAdmin} is on top of role: ${revokingRole}`)
+
+    if (roleAdmin && callerRoles.includes(roleAdmin)) {
+      await this.roleStore.removeRoleBySchema(req.body)
+      return res.status(200).json({
+        success: true,
+        message: `User: ${req.user.address} revoked ${req.body.role} to ${req.body.user}`,
+      })
+    } else {
+      return res.status(401).json({
+        success: false,
+        message: `User: ${req.user.address} is not allowed to revoke ${req.body.role} from ${req.body.user}`,
+      })
+    }
   }
 
   // Handlers as arrow functions to preserve `this`

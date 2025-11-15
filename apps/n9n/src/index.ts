@@ -4,18 +4,22 @@ import { Server } from '@mini-math/remote-server'
 import { InMemoryRuntimeStore, RuntimeDef } from '@mini-math/runtime'
 import { InMemoryWorkflowStore, WorkflowDef } from '@mini-math/workflow'
 import { RemoteWorker } from '@mini-math/remote-worker'
-import { InMemoryKeyValueStore } from '@mini-math/keystore'
+import { RedisStore, RabbitMQQueue } from '@mini-math/adapters'
 import { InMemoryRoleStore } from '@mini-math/rbac'
 
-import { InMemoryQueue } from '@mini-math/queue'
+import { config } from 'dotenv'
+import { getRedisUrl } from './redis_cfg.js'
+import { getRabbitMqUrl } from './rabbitmq_cfg.js'
+
+config()
 
 const INIT_PLATFORM_OWNER = '0x29e78bB5ef59a7fa66606c665408D6E680F5a06f'
+
 const nodeFactory = new NodeFactory()
-const queue = new InMemoryQueue<[WorkflowDef, RuntimeDef]>()
+const queue = new RabbitMQQueue<[WorkflowDef, RuntimeDef]>(getRabbitMqUrl(), 'workflow_queue')
 const workflowStore = new InMemoryWorkflowStore()
 const runtimeStore = new InMemoryRuntimeStore()
-const sessionStore = new InMemoryKeyValueStore()
-
+const sessionStore = new RedisStore(getRedisUrl())
 const roleStore = new InMemoryRoleStore(INIT_PLATFORM_OWNER)
 
 const worker1 = new RemoteWorker(queue, workflowStore, runtimeStore, nodeFactory, 'Simple Worker 1')

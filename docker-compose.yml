@@ -1,0 +1,19 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis-ephemeral
+    command:
+      ['redis-server', '--save', '', '--appendonly', 'no', '--requirepass', '${REDIS_PASSWORD}']
+    ports:
+      - '6379:6379'
+    restart: unless-stopped
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbitmq-ephemeral
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    ports:
+      - '5672:5672' # AMQP
+      - '15672:15672' # HTTP management UI
+    restart: unless-stopped

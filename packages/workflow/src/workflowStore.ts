@@ -43,6 +43,7 @@ export abstract class WorkflowStore {
   public abstract create(
     workflowId: string,
     core: z.infer<typeof WorkflowCore>,
+    owner: string,
   ): Promise<WorkflowDef>
 
   /**

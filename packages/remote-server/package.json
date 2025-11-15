@@ -44,6 +44,7 @@
     "@mini-math/keystore": "^0.1.0",
     "@mini-math/logger": "^0.1.0",
     "@mini-math/queue": "^0.1.0",
+    "@mini-math/rbac": "^0.1.0",
     "@mini-math/runtime": "^0.1.0",
     "@mini-math/workflow": "^0.1.0",
     "express": "^5.1.0",
