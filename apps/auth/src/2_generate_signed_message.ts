@@ -4,7 +4,7 @@ import { SiweMessage } from 'siwe'
 export async function main() {
   const DOMAIN = 'localhost:3000'
 
-  const CHAIN_ID = Number(process.env.CHAIN_ID ?? 1)
+  const CHAIN_ID = Number(process.env.CHAIN_ID!)
 
   const wallet = Wallet.createRandom()
 

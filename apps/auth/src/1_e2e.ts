@@ -3,6 +3,9 @@ import axios from 'axios'
 import { CookieJar } from 'tough-cookie'
 import { wrapper } from 'axios-cookiejar-support'
 import { SiweMessage } from 'siwe'
+import { config } from 'dotenv'
+
+config()
 
 const demo_workflow = {
   id: 'workflow-id-1234',
@@ -32,9 +35,9 @@ const demo_workflow = {
 export async function main() {
   const DOMAIN = 'localhost:3000'
 
-  const CHAIN_ID = Number(process.env.CHAIN_ID ?? 1)
+  const CHAIN_ID = Number(process.env.CHAIN_ID!)
 
-  const wallet = new Wallet('c196684164f3523200c3df248ea65e78d11891f6e40b92016db4c77365d39b16')
+  const wallet = new Wallet(process.env.PLATFORM_OWNER_PRIVATE_KEY!)
 
   const jar = new CookieJar()
   const client = wrapper(axios.create({ baseURL: `http://${DOMAIN}`, jar, withCredentials: true }))

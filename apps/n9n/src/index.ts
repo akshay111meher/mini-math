@@ -16,16 +16,15 @@ import { config } from 'dotenv'
 import { getRedisUrl } from './redis_cfg.js'
 import { getRabbitMqUrl } from './rabbitmq_cfg.js'
 import { getPostgresUrl } from './postgres_cfg.js'
+import { getInitPlatformOwner } from './platform_owner.js'
 
 config()
-
-const INIT_PLATFORM_OWNER = '0x29e78bB5ef59a7fa66606c665408D6E680F5a06f'
 
 const nodeFactory = new NodeFactory()
 const queue = new RabbitMQQueue<[WorkflowDef, RuntimeDef]>(getRabbitMqUrl(), 'workflow_queue')
 const workflowStore = new PostgresWorkflowstore(getPostgresUrl())
 const runtimeStore = new PostgresRuntimeStore(getPostgresUrl())
-const roleStore = new PostgresRoleStore(getPostgresUrl(), INIT_PLATFORM_OWNER)
+const roleStore = new PostgresRoleStore(getPostgresUrl(), getInitPlatformOwner())
 const sessionStore = new RedisStore(getRedisUrl())
 
 const worker1 = new RemoteWorker(queue, workflowStore, runtimeStore, nodeFactory, 'Simple Worker 1')
