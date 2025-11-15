@@ -163,15 +163,15 @@ export class IfElseNode extends BaseNode {
 
     this.logger.info(`Condition evaluation result: ${conditionResult}`)
 
-    const result = {
-      type: 'ifElse',
-      timestamp: new Date().toISOString(),
-      leftPath,
-      leftValue,
-      operator,
-      rightValue,
-      conditionResult,
-    }
+    // const result = {
+    //   type: 'ifElse',
+    //   timestamp: new Date().toISOString(),
+    //   leftPath,
+    //   leftValue,
+    //   operator,
+    //   rightValue,
+    //   conditionResult,
+    // }
 
     this.workflowGlobalState.updatePartialState({
       [resultVariableName]: conditionResult,
