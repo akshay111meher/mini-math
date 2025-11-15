@@ -11,4 +11,8 @@ async function main() {
   return 'Done'
 }
 
-main().then(console.log).catch(console.error)
+main()
+  .then(console.log)
+  .catch(function (ex) {
+    console.error(JSON.stringify(ex, null, 4))
+  })

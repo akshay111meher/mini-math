@@ -17,3 +17,13 @@ services:
       - '5672:5672' # AMQP
       - '15672:15672' # HTTP management UI
     restart: unless-stopped
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres-ephemeral
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - '5432:5432'
+    restart: unless-stopped

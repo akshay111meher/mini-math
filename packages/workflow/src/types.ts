@@ -1,22 +1,23 @@
 import { z } from 'zod'
-import { NodeDef, NodeDefType, EdgeDef, ExecutionResult } from '@mini-math/nodes'
+import { NodeDef, NodeDefType, EdgeDef, ExecutionResult, NodeRef } from '@mini-math/nodes'
 import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi'
 extendZodWithOpenApi(z)
 
 export const WorkflowRef = z.string().min(16)
+export type WorkflowRefType = z.infer<typeof WorkflowRef>
 
 export const WorkflowCore = z
   .object({
-    name: z.string().optional(),
-    version: z.string(),
+    name: z.string().max(255, 'Name must be at most 255 characters').optional(),
+    version: z.string().min(1).max(2),
     nodes: z.array(NodeDef).min(1),
     edges: z.array(EdgeDef),
-    entry: z.string(),
+    entry: NodeRef,
     globalState: z.unknown().optional(),
   })
   .openapi('WorkflowCore')
 
-export type WorkflowCoreDef = z.infer<typeof WorkflowCore>
+export type WorkflowCoreType = z.infer<typeof WorkflowCore>
 const WorkflowOwnerRef = z.string()
 
 export const WorkflowSchema = WorkflowCore.extend({ id: WorkflowRef })

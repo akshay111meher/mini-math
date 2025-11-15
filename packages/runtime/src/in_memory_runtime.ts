@@ -31,7 +31,11 @@ export class InMemoryRuntimeStore extends RuntimeStore {
     return new Runtime(rt.serialize())
   }
 
-  public async create(workflowId: string, initial?: Partial<RuntimeDef>): Promise<Runtime> {
+  protected async initialize(): Promise<void> {
+    return
+  }
+
+  public async _create(workflowId: string, initial?: Partial<RuntimeDef>): Promise<Runtime> {
     if (!workflowId) throw new RuntimeStoreError('VALIDATION', 'workflowId is required')
     if (this.store.has(workflowId)) {
       throw new RuntimeStoreError('ALREADY_EXISTS', `runtime for "${workflowId}" already exists`)
@@ -43,24 +47,26 @@ export class InMemoryRuntimeStore extends RuntimeStore {
         visited: [],
         current: null,
         finished: false,
+        id: workflowId,
         ...(initial ?? {}),
       })
       const runtime = new Runtime(def)
       this.store.set(workflowId, runtime)
       return this.cloneRuntime(runtime)
     } catch (err) {
+      console.error(err)
       throw this.asStoreError(err, 'VALIDATION', 'Failed to create runtime')
     }
   }
 
-  public async get(workflowId: string): Promise<Runtime> {
+  public async _get(workflowId: string): Promise<Runtime> {
     if (!workflowId) throw new RuntimeStoreError('VALIDATION', 'workflowId is required')
     const existing = this.store.get(workflowId)
     if (!existing) throw new RuntimeStoreError('NOT_FOUND', `runtime for "${workflowId}" not found`)
     return this.cloneRuntime(existing)
   }
 
-  public async update(workflowId: string, patch: Partial<RuntimeDef>): Promise<Runtime> {
+  public async _update(workflowId: string, patch: Partial<RuntimeDef>): Promise<Runtime> {
     if (!workflowId) throw new RuntimeStoreError('VALIDATION', 'workflowId is required')
     const existing = this.store.get(workflowId)
     if (!existing) throw new RuntimeStoreError('NOT_FOUND', `runtime for "${workflowId}" not found`)
@@ -75,15 +81,15 @@ export class InMemoryRuntimeStore extends RuntimeStore {
     }
   }
 
-  public async exists(workflowId: string): Promise<boolean> {
+  public async _exists(workflowId: string): Promise<boolean> {
     return this.store.has(workflowId)
   }
 
-  public async delete(workflowId: string): Promise<void> {
+  public async _delete(workflowId: string): Promise<void> {
     this.store.delete(workflowId)
   }
 
-  public async replace(workflowId: string, def: RuntimeDef): Promise<Runtime> {
+  public async _replace(workflowId: string, def: RuntimeDef): Promise<Runtime> {
     if (!workflowId) throw new RuntimeStoreError('VALIDATION', 'workflowId is required')
     try {
       const parsed = RuntimeStateSchema.parse(def)
@@ -95,12 +101,12 @@ export class InMemoryRuntimeStore extends RuntimeStore {
     }
   }
 
-  public async snapshot(workflowId: string): Promise<RuntimeDef> {
+  public async _snapshot(workflowId: string): Promise<RuntimeDef> {
     const rt = await this.get(workflowId)
     return rt.serialize() // plain data, safe to hand out
   }
 
-  public async list(options?: ListOptions): Promise<ListResult> {
+  public async _list(options?: ListOptions): Promise<ListResult> {
     const limit = Math.max(1, Math.min(options?.limit ?? 50, 100))
     const all = Array.from(this.store.entries())
       .sort((a, b) => a[0].localeCompare(b[0]))
@@ -118,7 +124,7 @@ export class InMemoryRuntimeStore extends RuntimeStore {
     return { items: slice, nextCursor }
   }
 
-  public async seedIfEmpty(workflowId: string, entry: string): Promise<Runtime> {
+  public async _seedIfEmpty(workflowId: string, entry: string): Promise<Runtime> {
     if (!workflowId) throw new RuntimeStoreError('VALIDATION', 'workflowId is required')
     const existing = this.store.get(workflowId)
     if (!existing) throw new RuntimeStoreError('NOT_FOUND', `runtime for "${workflowId}" not found`)

@@ -1,5 +1,5 @@
-import { z, ZodError } from 'zod'
-import { WorkflowCore, WorkflowSchema, type WorkflowDef } from './types.js'
+import { ZodError } from 'zod'
+import { WorkflowCore, WorkflowCoreType, WorkflowSchema, type WorkflowDef } from './types.js'
 import {
   WorkflowStore,
   WorkflowStoreError,
@@ -12,9 +12,9 @@ import { deepClone } from '@mini-math/utils'
 export class InMemoryWorkflowStore extends WorkflowStore {
   private readonly store = new Map<string, WorkflowDef>()
 
-  public override async create(
+  public override async _create(
     workflowId: string,
-    core: z.infer<typeof WorkflowCore>,
+    core: WorkflowCoreType,
     owner: string,
   ): Promise<WorkflowDef> {
     if (!workflowId) throw new WorkflowStoreError('VALIDATION', 'workflowId is required')
@@ -33,7 +33,11 @@ export class InMemoryWorkflowStore extends WorkflowStore {
     }
   }
 
-  public async get(workflowId: string): Promise<WorkflowDef> {
+  protected async initialize(): Promise<void> {
+    return
+  }
+
+  public async _get(workflowId: string): Promise<WorkflowDef> {
     if (!workflowId) throw new WorkflowStoreError('VALIDATION', 'workflowId is required')
 
     const existing = this.store.get(workflowId)
@@ -43,7 +47,7 @@ export class InMemoryWorkflowStore extends WorkflowStore {
     return deepClone(existing)
   }
 
-  public async update(workflowId: string, patch: Partial<WorkflowDef>): Promise<WorkflowDef> {
+  public async _update(workflowId: string, patch: Partial<WorkflowDef>): Promise<WorkflowDef> {
     if (!workflowId) throw new WorkflowStoreError('VALIDATION', 'workflowId is required')
 
     const existing = this.store.get(workflowId)
@@ -61,16 +65,16 @@ export class InMemoryWorkflowStore extends WorkflowStore {
     }
   }
 
-  public async exists(workflowId: string): Promise<boolean> {
+  public async _exists(workflowId: string): Promise<boolean> {
     return this.store.has(workflowId)
   }
 
   // No-op if missing (can change to throw NOT_FOUND if you prefer)
-  public async delete(workflowId: string): Promise<void> {
+  public async _delete(workflowId: string): Promise<void> {
     this.store.delete(workflowId)
   }
 
-  public async list(options?: ListOptions): Promise<ListResult> {
+  public async _list(options?: ListOptions): Promise<ListResult> {
     const limit = Math.max(1, Math.min(options?.limit ?? 50, 100))
     const all = Array.from(this.store.values()).sort((a, b) => a.id.localeCompare(b.id))
 
@@ -90,7 +94,7 @@ export class InMemoryWorkflowStore extends WorkflowStore {
     }
   }
 
-  public async replace(workflowId: string, def: WorkflowDef): Promise<WorkflowDef> {
+  public async _replace(workflowId: string, def: WorkflowDef): Promise<WorkflowDef> {
     if (!workflowId) throw new WorkflowStoreError('VALIDATION', 'workflowId is required')
     if (def.id !== workflowId) {
       throw new WorkflowStoreError('CONFLICT', 'id in payload does not match workflowId')

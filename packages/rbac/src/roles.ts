@@ -7,8 +7,8 @@ export enum Role {
 }
 
 export const GrantOrRevokeRoleSchema = z.object({
+  user: z.string().min(1),
   role: z.enum(Role),
-  user: z.string(),
 })
 
 export type GrantOrRevokeRoleType = z.infer<typeof GrantOrRevokeRoleSchema>

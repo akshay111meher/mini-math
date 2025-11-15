@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1763191236282,
+      "tag": "0000_remarkable_elektra",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1763191517960,
+      "tag": "0001_green_champions",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1763201234606,
+      "tag": "0002_right_phalanx",
+      "breakpoints": true
+    }
+  ]
+}
