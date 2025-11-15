@@ -6,3 +6,7 @@ node_modules/**
 .DS_Store
 .env*
 packages/**/tsconfig.build.tsbuildinfo
+app/**/tsconfig.build.tsbuildinfo
+
+packages/**/tsconfig.tsbuildinfo
+app/**/tsconfig.tsbuildinfo

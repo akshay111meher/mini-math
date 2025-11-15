@@ -1,15 +1,21 @@
 // src/main.ts
 import { NodeFactory } from '@mini-math/compiler'
 import { Server } from '@mini-math/remote-server'
-import { InMemoryRuntimeStore, RuntimeDef } from '@mini-math/runtime'
-import { InMemoryWorkflowStore, WorkflowDef } from '@mini-math/workflow'
+import { RuntimeDef } from '@mini-math/runtime'
+import { WorkflowDef } from '@mini-math/workflow'
 import { RemoteWorker } from '@mini-math/remote-worker'
-import { RedisStore, RabbitMQQueue } from '@mini-math/adapters'
-import { InMemoryRoleStore } from '@mini-math/rbac'
+import {
+  RedisStore,
+  RabbitMQQueue,
+  PostgresWorkflowstore,
+  PostgresRuntimeStore,
+  PostgresRoleStore,
+} from '@mini-math/adapters'
 
 import { config } from 'dotenv'
 import { getRedisUrl } from './redis_cfg.js'
 import { getRabbitMqUrl } from './rabbitmq_cfg.js'
+import { getPostgresUrl } from './postgres_cfg.js'
 
 config()
 
@@ -17,10 +23,10 @@ const INIT_PLATFORM_OWNER = '0x29e78bB5ef59a7fa66606c665408D6E680F5a06f'
 
 const nodeFactory = new NodeFactory()
 const queue = new RabbitMQQueue<[WorkflowDef, RuntimeDef]>(getRabbitMqUrl(), 'workflow_queue')
-const workflowStore = new InMemoryWorkflowStore()
-const runtimeStore = new InMemoryRuntimeStore()
+const workflowStore = new PostgresWorkflowstore(getPostgresUrl())
+const runtimeStore = new PostgresRuntimeStore(getPostgresUrl())
+const roleStore = new PostgresRoleStore(getPostgresUrl(), INIT_PLATFORM_OWNER)
 const sessionStore = new RedisStore(getRedisUrl())
-const roleStore = new InMemoryRoleStore(INIT_PLATFORM_OWNER)
 
 const worker1 = new RemoteWorker(queue, workflowStore, runtimeStore, nodeFactory, 'Simple Worker 1')
 worker1.start()

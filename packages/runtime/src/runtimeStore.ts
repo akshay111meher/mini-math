@@ -1,5 +1,5 @@
 // runtimeStore.ts
-import type { RuntimeDef } from './runtime.js'
+import type { RuntimeDef, Runtime } from './runtime.js'
 
 export type RuntimeStoreErrorCode =
   | 'ALREADY_EXISTS'
@@ -36,47 +36,97 @@ export interface ListResult {
  * - update(): throw NOT_FOUND if id missing
  */
 export abstract class RuntimeStore {
+  private initialized = false
+
+  protected async ensureInitialized(): Promise<void> {
+    if (!this.initialized) {
+      await this.initialize()
+      this.initialized = true
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // PUBLIC API — always calls ensureInitialized() then delegates to internals
+  // ---------------------------------------------------------------------------
+
   /** Create a new runtime for workflowId (optionally from initial). */
-  public abstract create(
-    workflowId: string,
-    initial?: Partial<RuntimeDef>,
-  ): Promise<import('./runtime.js').Runtime>
+  public async create(workflowId: string, initial?: Partial<RuntimeDef>): Promise<Runtime> {
+    await this.ensureInitialized()
+    return this._create(workflowId, initial)
+  }
 
   /** Get the runtime instance for workflowId. */
-  public abstract get(workflowId: string): Promise<import('./runtime.js').Runtime>
+  public async get(workflowId: string): Promise<Runtime> {
+    await this.ensureInitialized()
+    return this._get(workflowId)
+  }
 
   /** Merge/patch the runtime state for workflowId. */
-  public abstract update(
-    workflowId: string,
-    patch: Partial<RuntimeDef>,
-  ): Promise<import('./runtime.js').Runtime>
-
-  // ---- Platform helpers ----
+  public async update(workflowId: string, patch: Partial<RuntimeDef>): Promise<Runtime> {
+    await this.ensureInitialized()
+    return this._update(workflowId, patch)
+  }
 
   /** True if a runtime exists for workflowId. */
-  public abstract exists(workflowId: string): Promise<boolean>
+  public async exists(workflowId: string): Promise<boolean> {
+    await this.ensureInitialized()
+    return this._exists(workflowId)
+  }
 
   /** Hard delete runtime. (No-op if missing or throw NOT_FOUND—document in impl.) */
-  public abstract delete(workflowId: string): Promise<void>
+  public async delete(workflowId: string): Promise<void> {
+    await this.ensureInitialized()
+    return this._delete(workflowId)
+  }
 
   /** Replace the whole runtime state with a new def. */
-  public abstract replace(
-    workflowId: string,
-    def: RuntimeDef,
-  ): Promise<import('./runtime.js').Runtime>
+  public async replace(workflowId: string, def: RuntimeDef): Promise<Runtime> {
+    await this.ensureInitialized()
+    return this._replace(workflowId, def)
+  }
 
   /** Return a serialized snapshot (data only). */
-  public abstract snapshot(workflowId: string): Promise<RuntimeDef>
+  public async snapshot(workflowId: string): Promise<RuntimeDef> {
+    await this.ensureInitialized()
+    return this._snapshot(workflowId)
+  }
 
   /** List runtime snapshots (paged). */
-  public abstract list(options?: ListOptions): Promise<ListResult>
+  public async list(options?: ListOptions): Promise<ListResult> {
+    await this.ensureInitialized()
+    return this._list(options)
+  }
 
   /**
    * Seed queue with `entry` if queue/visited are empty and not finished.
    * Returns the updated runtime.
    */
-  public abstract seedIfEmpty(
-    workflowId: string,
-    entry: string,
-  ): Promise<import('./runtime.js').Runtime>
+  public async seedIfEmpty(workflowId: string, entry: string): Promise<Runtime> {
+    await this.ensureInitialized()
+    return this._seedIfEmpty(workflowId, entry)
+  }
+
+  // ---------------------------------------------------------------------------
+  // INTERNAL API — concrete stores implement only these
+  // ---------------------------------------------------------------------------
+
+  protected abstract initialize(): Promise<void>
+
+  protected abstract _create(workflowId: string, initial?: Partial<RuntimeDef>): Promise<Runtime>
+
+  protected abstract _get(workflowId: string): Promise<Runtime>
+
+  protected abstract _update(workflowId: string, patch: Partial<RuntimeDef>): Promise<Runtime>
+
+  protected abstract _exists(workflowId: string): Promise<boolean>
+
+  protected abstract _delete(workflowId: string): Promise<void>
+
+  protected abstract _replace(workflowId: string, def: RuntimeDef): Promise<Runtime>
+
+  protected abstract _snapshot(workflowId: string): Promise<RuntimeDef>
+
+  protected abstract _list(options?: ListOptions): Promise<ListResult>
+
+  protected abstract _seedIfEmpty(workflowId: string, entry: string): Promise<Runtime>
 }

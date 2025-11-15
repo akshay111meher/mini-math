@@ -3,6 +3,7 @@ import { Input, InputDefClass, InputType } from './input.js'
 import { Output, OutputDefClass, OutputType } from './output.js'
 
 export const NodeRef = z.string().min(16)
+export type NodeRefType = z.infer<typeof NodeRef>
 
 export enum NodeType {
   ifElse = 'ifElse',

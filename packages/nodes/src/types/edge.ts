@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 export const EdgeRef = z.string().min(16)
+export type EdgeRefType = z.infer<typeof EdgeRef>
 
 export const EdgeDef = z
   .object({

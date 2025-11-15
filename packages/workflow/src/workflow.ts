@@ -32,6 +32,7 @@ export class Workflow implements WorkflowGlobalState {
         visited: [],
         current: null,
         finished: false,
+        id: this.workflowDef.id,
       }
     } else {
       this.runtime = runtimeDef
