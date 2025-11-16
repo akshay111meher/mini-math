@@ -17,7 +17,7 @@ export class TestNode extends BaseNode {
     const SECRET_IDENTIFIER = 'TEST_SECRET'
     const secret = this.workflowGlobalState.getSecret(SECRET_IDENTIFIER)
     if (secret) {
-      this.logger.info(`Found Secret: ${SECRET_IDENTIFIER} with value: ${secret}`)
+      this.logger.debug(`Found Secret: ${SECRET_IDENTIFIER} with value: ${secret}`)
     } else {
       this.logger.warn(`Secret: ${SECRET_IDENTIFIER} Not Found`)
     }

@@ -1,4 +1,4 @@
-import { SecretStore, BaseSecretType } from '@mini-math/secrets'
+import { SecretStore } from '@mini-math/secrets'
 import { RequestHandler } from 'express'
 
 const MAX_NUMBER_OF_SECRETS = 50

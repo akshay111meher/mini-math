@@ -84,7 +84,7 @@ export async function main() {
     secretData: 'thisisplainsecret',
   })
   console.log('storeSecret:', storeSecret.data)
-  
+
   const workflow_run = await client.post('/run', { ...demo_workflow, owner: wallet.address })
   console.log('workflow_run', workflow_run.data)
 

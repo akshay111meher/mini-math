@@ -22,7 +22,9 @@ export class RedisStore extends KeyValueStore {
 
   protected async initialize(): Promise<void> {
     if (!this.client.isOpen) {
+      this.logger.debug('initializing')
       await this.client.connect()
+      this.logger.info('initialized successfully')
     }
   }
 
