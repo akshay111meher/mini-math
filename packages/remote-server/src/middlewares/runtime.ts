@@ -35,6 +35,27 @@ export function revertIfNoRuntime(runtimeStore: RuntimeStore): RequestHandler {
   }
 }
 
+export function deleteRuntimeIfExists(runtimeStore: RuntimeStore): RequestHandler {
+  return async (req, res, next) => {
+    const wfId = req.workflowId ?? res.locals?.id ?? (req.body?.id as string | undefined)
+    if (!wfId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION', message: 'workflow id is required' },
+      })
+    }
+    try {
+      await runtimeStore.delete(wfId)
+      return next()
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        error: { code: 'UNKNOWN', message: err instanceof Error ? err.message : String(err) },
+      })
+    }
+  }
+}
+
 export function createNewRuntime(runtimeStore: RuntimeStore): RequestHandler {
   return async (req, res, next) => {
     const wfId = req.workflowId ?? (req.body?.id as string | undefined)

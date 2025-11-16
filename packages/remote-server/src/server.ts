@@ -32,6 +32,8 @@ import {
   requireAuth,
   revertIfNotWorkflowOwner,
   revertIfNoRole,
+  deleteWorkflowIfExists,
+  deleteRuntimeIfExists,
 } from './middlewares/index.js'
 import { IQueue } from '@mini-math/queue'
 import { logout, verifySiwe } from './auth.js'
@@ -135,6 +137,8 @@ export class Server {
       requireAuth(),
       mustHaveRole([Role.Developer]),
       validateBody(WorkflowSchema),
+      deleteWorkflowIfExists(this.workflowStore),
+      deleteRuntimeIfExists(this.runtimeStore),
       createNewWorkflow(this.workflowStore),
       createNewRuntime(this.runtimeStore),
       this.handleRun,
@@ -287,8 +291,10 @@ export class Server {
 
   // Handlers as arrow functions to preserve `this`
   private handleRun = async (req: Request, res: Response) => {
+    this.logger.trace('direct workflow request received')
     const runtime = req.runtime
     const secrets = await this.secretStore.listSecrets(req.user.address)
+    this.logger.trace('fetched secrets')
     let workflow = new Workflow(req.body, this.nodeFactory, secrets, runtime)
     this.logger.trace(`Received workflow: ${workflow.id()}`)
 
@@ -351,7 +357,6 @@ export class Server {
     // Build the engine from the persisted workflow (not req.body!)
 
     const wfDef = req.workflow as WorkflowDef // TODO: enfore this by types
-    const rtDef = req.runtime
 
     Workflow.syntaxCheck(wfDef, this.nodeFactory)
     this.logger.info(`Loaded workflow: ${wfDef.id}`)

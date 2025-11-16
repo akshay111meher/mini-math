@@ -3,8 +3,8 @@ import { RequestHandler } from 'express'
 
 export function handleStoreSecret(secretStore: SecretStore): RequestHandler {
   return async (req, res) => {
-    let userId = req.user.address
-    let baseSecret = BaseSecretSchema.parse(req.body)
+    const userId = req.user.address
+    const baseSecret = BaseSecretSchema.parse(req.body)
     await secretStore.saveSecret({ userId, ...baseSecret })
 
     return res.status(200).json({
@@ -16,9 +16,9 @@ export function handleStoreSecret(secretStore: SecretStore): RequestHandler {
 
 export function handleRemoveSecret(secretStore: SecretStore): RequestHandler {
   return async (req, res) => {
-    let userId = req.user.address
-    let body = SecretIdenfiferSchema.parse(req.body)
-    let result = await secretStore.deleteSecret(userId, body.secretIdentifier)
+    const userId = req.user.address
+    const body = SecretIdenfiferSchema.parse(req.body)
+    const result = await secretStore.deleteSecret(userId, body.secretIdentifier)
 
     if (result) {
       return res.status(201).json({
@@ -36,9 +36,9 @@ export function handleRemoveSecret(secretStore: SecretStore): RequestHandler {
 
 export function handleFetchSecret(secretStore: SecretStore): RequestHandler {
   return async (req, res) => {
-    let userId = req.user.address
-    let body = SecretIdenfiferSchema.parse(req.body)
-    let result = await secretStore.getSecret(userId, body.secretIdentifier)
+    const userId = req.user.address
+    const body = SecretIdenfiferSchema.parse(req.body)
+    const result = await secretStore.getSecret(userId, body.secretIdentifier)
 
     if (result) {
       return res.status(200).json(result)
@@ -53,8 +53,8 @@ export function handleFetchSecret(secretStore: SecretStore): RequestHandler {
 
 export function handleFetchAllSecretIdentifiers(secretStore: SecretStore): RequestHandler {
   return async (req, res) => {
-    let userId = req.user.address
-    let result = await secretStore.listSecrets(userId)
+    const userId = req.user.address
+    const result = await secretStore.listSecrets(userId)
     if (result.length == 0) {
       return res.status(404).json({
         success: false,

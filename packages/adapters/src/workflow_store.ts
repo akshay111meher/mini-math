@@ -11,18 +11,21 @@ import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import * as schema from './db/schema/workflow.js'
 import { workflows } from './db/schema/workflow.js'
+import { makeLogger, Logger } from '@mini-math/logger'
 
 type Db = NodePgDatabase<typeof schema>
 
 export class PostgresWorkflowstore extends WorkflowStore {
   private db!: Db
   private pool!: Pool
+  private logger: Logger
 
   private readonly postgresUrl: string
 
   constructor(postgresUrl: string) {
     super()
     this.postgresUrl = postgresUrl
+    this.logger = makeLogger('PostgresWorkflowStore')
   }
 
   protected async initialize(): Promise<void> {
@@ -45,11 +48,34 @@ export class PostgresWorkflowstore extends WorkflowStore {
     core: WorkflowCoreType,
     owner: string,
   ): Promise<WorkflowDef> {
+    this.logger.trace(`trying to create workflow with id ${workflowId}`)
+
     const insert = coreToInsert(workflowId, core, owner)
 
-    const [row] = await this.db.insert(workflows).values(insert).returning()
+    try {
+      const [row] = await this.db.insert(workflows).values(insert).returning()
 
-    return rowToDef(row)
+      this.logger.trace(`inserted workflow with id ${workflowId} into database`)
+
+      return rowToDef(row)
+    } catch (err) {
+      // TS thinks err is unknown
+      this.logger.error(
+        JSON.stringify({
+          err,
+          workflowId,
+          insert,
+        }) + 'failed to insert workflow into database',
+      )
+
+      // optional: if your logger doesn't print stack by default
+      if (err instanceof Error) {
+        console.error('DB error stack:', err.stack)
+      }
+
+      // rethrow so the base class / HTTP layer can turn it into 500
+      throw err
+    }
   }
   protected async _get(workflowId: string): Promise<WorkflowDef> {
     const row = await this.db.query.workflows.findFirst({

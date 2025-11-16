@@ -34,7 +34,10 @@ export class PostgresRoleStore extends RoleStore {
 
     // 3. Optional sanity check – ensure DB is reachable
     await this.db.execute(sql`select 1`)
-    await this._addRoleImpl(this.init_platform_owner, Role.PlatformOwner)
+    const currentRoles = await this._getRolesImpl(this.init_platform_owner)
+    if (!currentRoles.includes(Role.PlatformOwner)) {
+      await this._addRoleImpl(this.init_platform_owner, Role.PlatformOwner)
+    }
   }
 
   protected async _getRolesImpl(userId: string): Promise<Role[]> {

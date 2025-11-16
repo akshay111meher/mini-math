@@ -1,4 +1,4 @@
-version: "3.9"
+version: '3.9'
 
 services:
   n9n-server:
@@ -9,9 +9,10 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    command: ["node", "./apps/n9n/dist/index.js", "start-server", "--domain", "0.0.0.0:${SERVER_PORT}"]
+    command:
+      ['node', './apps/n9n/dist/index.js', 'start-server', '--domain', '0.0.0.0:${SERVER_PORT}']
     ports:
-      - "${SERVER_PORT:-3000}:3000"
+      - '${SERVER_PORT:-3000}:3000'
     environment:
       # override / ensure some defaults if not in .env
       NODE_ENV: ${NODE_ENV:-production}
@@ -24,7 +25,7 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    command: ["node", "apps/n9n/dist/index.js", "start-worker", "--name", "worker1"]
+    command: ['node', 'apps/n9n/dist/index.js', 'start-worker', '--name', 'worker1']
     environment:
       NODE_ENV: ${NODE_ENV:-production}
     depends_on:
@@ -38,7 +39,7 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    command: ["node", "apps/n9n/dist/index.js", "start-worker", "--name", "worker2"]
+    command: ['node', 'apps/n9n/dist/index.js', 'start-worker', '--name', 'worker2']
     environment:
       NODE_ENV: ${NODE_ENV:-production}
     depends_on:

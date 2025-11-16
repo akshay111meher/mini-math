@@ -2,7 +2,9 @@ import type { RequestHandler } from 'express'
 import type { WorkflowDef } from '@mini-math/workflow'
 import type { WorkflowStore } from '@mini-math/workflow'
 import { WorkflowStoreError } from '@mini-math/workflow'
+import { makeLogger } from '@mini-math/logger'
 
+const logger = makeLogger('workflow-middlewares')
 declare module 'express-serve-static-core' {
   interface Locals {
     workflow?: WorkflowDef
@@ -52,6 +54,27 @@ export function revertIfNoWorkflow(workflowStore: WorkflowStore): RequestHandler
   }
 }
 
+export function deleteWorkflowIfExists(workflowStore: WorkflowStore): RequestHandler {
+  return async (req, res, next) => {
+    const wfId = req.workflowId ?? res.locals?.id ?? (req.body?.id as string | undefined)
+    if (!wfId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION', message: 'workflow id is required' },
+      })
+    }
+    logger.trace(`Trying to delete workflow with id: ${wfId}`)
+    try {
+      await workflowStore.delete(wfId)
+      return next()
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        error: { code: 'UNKNOWN', message: err instanceof Error ? err.message : String(err) },
+      })
+    }
+  }
+}
 export function createNewWorkflow(workflowStore: WorkflowStore): RequestHandler {
   return async (req, res, next) => {
     // Accept an id from prior middleware (req.workflowId or res.locals.id) or from body
@@ -63,14 +86,18 @@ export function createNewWorkflow(workflowStore: WorkflowStore): RequestHandler 
       })
     }
 
+    logger.trace(`Trying to workflow with id: ${wfId}`)
+
     try {
       // Expect req.body to be WorkflowCore (no id inside); store will validate + inject id.
       const def = await workflowStore.create(wfId, req.body, req.user.address)
       req.workflow = def
       res.locals.workflowDef = def
+      logger.debug(`Created workflow with id: ${wfId}`)
       return next()
     } catch (err) {
       if (err instanceof WorkflowStoreError) {
+        logger.error(`Failed creating workflow with id: ${wfId}`)
         switch (err.code) {
           case 'ALREADY_EXISTS':
             return res.status(409).json({
