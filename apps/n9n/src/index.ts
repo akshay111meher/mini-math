@@ -13,13 +13,14 @@ program
   .command('start-server')
   .description('Start the HTTP server')
   .requiredOption('--domain <domain>', 'Domain to bind')
-  .action(async (opts: { domain: string }) => {
-    const { domain } = opts
+  .requiredOption('--siwe <siwe>', 'Siwe Domain to bind')
+  .action(async (opts: { domain: string, siwe: string }) => {
+    const { domain, siwe } = opts
 
     // TODO: your real logic here
     console.log(`Starting server on domain: ${domain}`)
 
-    await App.start_server(domain)
+    await App.start_server(domain, siwe)
   })
 
 // app start-worker --name worker-1

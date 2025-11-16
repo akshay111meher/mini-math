@@ -64,6 +64,7 @@ export class Server {
     private queue: IQueue<[WorkflowDef, RuntimeDef]>,
     private kvs: KeyValueStore,
     private domainWithPort: string,
+    private siweDomain: string,
     private readonly session_secret: string,
     private readonly secure: boolean,
   ) {
@@ -186,7 +187,7 @@ export class Server {
     )
 
     this.app.get('/siwe/nonce', getNonce())
-    this.app.post('/siwe/verify', verifySiwe(this.domainWithPort))
+    this.app.post('/siwe/verify', verifySiwe(this.siweDomain))
     this.app.post('/logout', requireAuth(), logout())
 
     this.app.post(

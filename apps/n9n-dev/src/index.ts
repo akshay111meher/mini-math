@@ -52,7 +52,8 @@ const worker2 = new RemoteWorker(
 )
 worker2.start()
 
-const DOMAIN = 'localhost:3000'
+const DOMAIN = process.env.DOMAIN!
+const SIWE_DOMAIN = process.env.SIWE_DOMAIN!
 
 const server = new Server(
   workflowStore,
@@ -63,6 +64,7 @@ const server = new Server(
   queue,
   sessionStore,
   DOMAIN,
+  SIWE_DOMAIN,
   'super-long-session-secret',
   false,
 )

@@ -33,7 +33,8 @@ const demo_workflow = {
 }
 
 export async function main() {
-  const DOMAIN = 'localhost:3000'
+  const DOMAIN = process.env.DOMAIN!
+  const SIWE_DOMAIN = process.env.SIWE_DOMAIN!
 
   const CHAIN_ID = Number(process.env.CHAIN_ID!)
 
@@ -47,9 +48,9 @@ export async function main() {
   } = await client.get<{ nonce: string }>('/siwe/nonce')
 
   const msg = new SiweMessage({
-    domain: DOMAIN,
+    domain: SIWE_DOMAIN,
     address: wallet.address,
-    uri: `http://${DOMAIN}`,
+    uri: `http://${SIWE_DOMAIN}`,
     version: '1',
     chainId: CHAIN_ID,
     nonce,
