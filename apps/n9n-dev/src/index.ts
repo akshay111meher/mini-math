@@ -10,6 +10,7 @@ import {
   PostgresWorkflowstore,
   PostgresRuntimeStore,
   PostgresRoleStore,
+  PostgresSecretStore,
   config as adapterConfig,
 } from '@mini-math/adapters'
 
@@ -29,11 +30,26 @@ const roleStore = new PostgresRoleStore(
   adapterConfig.getInitPlatformOwner(),
 )
 const sessionStore = new RedisStore(adapterConfig.getRedisUrl())
+const secretStore = new PostgresSecretStore(adapterConfig.getPostgresUrl())
 
-const worker1 = new RemoteWorker(queue, workflowStore, runtimeStore, nodeFactory, 'Simple Worker 1')
+const worker1 = new RemoteWorker(
+  queue,
+  workflowStore,
+  runtimeStore,
+  secretStore,
+  nodeFactory,
+  'Simple Worker 1',
+)
 worker1.start()
 
-const worker2 = new RemoteWorker(queue, workflowStore, runtimeStore, nodeFactory, 'Simple Worker 2')
+const worker2 = new RemoteWorker(
+  queue,
+  workflowStore,
+  runtimeStore,
+  secretStore,
+  nodeFactory,
+  'Simple Worker 2',
+)
 worker2.start()
 
 const DOMAIN = 'localhost:3000'
@@ -43,6 +59,7 @@ const server = new Server(
   runtimeStore,
   nodeFactory,
   roleStore,
+  secretStore,
   queue,
   sessionStore,
   DOMAIN,

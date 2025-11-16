@@ -36,7 +36,7 @@ const workflowJson: WorkflowDef = {
 
 const printerNodeFactory = new PrinterNodeFactory()
 
-let workflow = new Workflow(workflowJson, printerNodeFactory)
+let workflow = new Workflow(workflowJson, printerNodeFactory, [])
 
 async function run() {
   while (!workflow.isFinished()) {
@@ -45,7 +45,7 @@ async function run() {
     console.log(JSON.stringify(info, null, 2))
     const [wf, rt] = workflow.serialize()
 
-    workflow = new Workflow(wf, printerNodeFactory, rt)
+    workflow = new Workflow(wf, printerNodeFactory, [], rt)
   }
 
   return 'Done Workflow Execution'

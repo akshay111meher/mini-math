@@ -6,4 +6,5 @@ export interface WorkflowGlobalState {
     patch: Readonly<P>,
     opts?: { deep?: boolean },
   ): void
+  getSecret(secretIdentifier: string): string | undefined
 }

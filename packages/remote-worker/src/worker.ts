@@ -1,6 +1,7 @@
 import { IQueue } from '@mini-math/queue'
 import { RuntimeDef, RuntimeStore } from '@mini-math/runtime'
 import { Workflow, WorkflowDef, WorkflowStore } from '@mini-math/workflow'
+import { SecretStore } from '@mini-math/secrets'
 import { Logger, makeLogger } from '@mini-math/logger'
 import { v4 } from 'uuid'
 import { NodeFactoryType } from '@mini-math/compiler'
@@ -12,6 +13,7 @@ export class RemoteWorker {
     private queue: IQueue<[WorkflowDef, RuntimeDef]>,
     private workflowStore: WorkflowStore,
     private runtimeStore: RuntimeStore,
+    private secretStore: SecretStore,
     private nodeFactory: NodeFactoryType,
     name: string,
   ) {
@@ -24,8 +26,10 @@ export class RemoteWorker {
     this.queue.onMessage(async (messageId: string, message: [WorkflowDef, RuntimeDef]) => {
       try {
         this.logger.debug(`Received message. MessageId: ${messageId}`)
+        const secrets = await this.secretStore.listSecrets(message[0].owner)
+
         const [wfSnap, rtSnap] = message
-        const workflow = new Workflow(wfSnap, this.nodeFactory, rtSnap)
+        const workflow = new Workflow(wfSnap, this.nodeFactory, secrets, rtSnap)
 
         if (workflow.isFinished()) {
           await this.queue.ack(messageId)
@@ -75,7 +79,6 @@ export class RemoteWorker {
         try {
           // optional: if your queue supports close / disconnect:
           if (typeof this.queue.close === 'function') {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             await this.queue.close()
           }
         } catch (err) {

@@ -38,6 +38,14 @@ import { logout, verifySiwe } from './auth.js'
 
 import { KeyValueSessionStore } from './keyvalue-session-store.js'
 import { KeyValueStore } from '@mini-math/keystore'
+import { BaseSecretSchema, SecretIdenfiferSchema, SecretStore } from '@mini-math/secrets'
+import {
+  handleFetchAllSecretIdentifiers,
+  handleFetchSecret,
+  handleRemoveSecret,
+  handleStoreSecret,
+} from './secret.js'
+import { ensureMaxSecretsCount } from './middlewares/secret.js'
 
 extendZodWithOpenApi(z)
 
@@ -50,6 +58,7 @@ export class Server {
     private runtimeStore: RuntimeStore,
     private nodeFactory: NodeFactoryType,
     private roleStore: RoleStore,
+    private secretStore: SecretStore,
     private queue: IQueue<[WorkflowDef, RuntimeDef]>,
     private kvs: KeyValueStore,
     private domainWithPort: string,
@@ -189,6 +198,34 @@ export class Server {
       this.handleRevokeRole,
     )
 
+    this.app.post(
+      '/storeSecret',
+      requireAuth(),
+      validateBody(BaseSecretSchema),
+      ensureMaxSecretsCount(this.secretStore),
+      handleStoreSecret(this.secretStore),
+    )
+
+    this.app.post(
+      '/removeSecret',
+      requireAuth(),
+      validateBody(SecretIdenfiferSchema),
+      handleRemoveSecret(this.secretStore),
+    )
+
+    this.app.post(
+      '/fetchSecret',
+      requireAuth(),
+      validateBody(SecretIdenfiferSchema),
+      handleFetchSecret(this.secretStore),
+    )
+
+    this.app.get(
+      '/fetchAllSecretIdentifiers',
+      requireAuth(),
+      handleFetchAllSecretIdentifiers(this.secretStore),
+    )
+
     this.app.get('/me', requireAuth(), (req, res) => {
       if (req?.session?.user) {
         return res.json({ user: req.session.user })
@@ -251,8 +288,8 @@ export class Server {
   // Handlers as arrow functions to preserve `this`
   private handleRun = async (req: Request, res: Response) => {
     const runtime = req.runtime
-
-    let workflow = new Workflow(req.body, this.nodeFactory, runtime)
+    const secrets = await this.secretStore.listSecrets(req.user.address)
+    let workflow = new Workflow(req.body, this.nodeFactory, secrets, runtime)
     this.logger.trace(`Received workflow: ${workflow.id()}`)
 
     if (workflow.isFinished()) {
@@ -287,7 +324,7 @@ export class Server {
 
       await this.workflowStore.update(workflow.id(), wf)
       await this.runtimeStore.update(workflow.id(), rt)
-      workflow = new Workflow(wf, this.nodeFactory, rt)
+      workflow = new Workflow(wf, this.nodeFactory, secrets, rt)
     }
 
     this.logger.trace(`Workflow finished: ${workflow.id()}`)
@@ -303,8 +340,7 @@ export class Server {
 
   private handleCompile = async (req: Request, res: Response) => {
     try {
-      const workflow = new Workflow(req.body, this.nodeFactory)
-      workflow.bfs()
+      Workflow.syntaxCheck(req.body, this.nodeFactory)
       return res.json({ success: true })
     } catch (error) {
       return res.status(400).json({ success: false, error: String(error) })
@@ -317,8 +353,8 @@ export class Server {
     const wfDef = req.workflow as WorkflowDef // TODO: enfore this by types
     const rtDef = req.runtime
 
-    const workflow = new Workflow(wfDef, this.nodeFactory, rtDef)
-    this.logger.info(`Loaded workflow: ${workflow.id()}`)
+    Workflow.syntaxCheck(wfDef, this.nodeFactory)
+    this.logger.info(`Loaded workflow: ${wfDef.id}`)
 
     // TODO: fix this from types perspective
     return res.status(201).json({ id: req.workflowId })
@@ -328,7 +364,8 @@ export class Server {
     const wfDef = req.workflow as WorkflowDef // TODO: enfore this by types
     const rtDef = req.runtime
 
-    const workflow = new Workflow(wfDef, this.nodeFactory, rtDef)
+    const secrets = await this.secretStore.listSecrets(req.user.address)
+    const workflow = new Workflow(wfDef, this.nodeFactory, secrets, rtDef)
     if (workflow.isFinished()) {
       return res
         .status(409)
@@ -362,7 +399,9 @@ export class Server {
     const wfDef = req.workflow as WorkflowDef // TODO: enfore this by types
     const rtDef = req.runtime as RuntimeDef // TODO: enfore this by types
 
-    const workflow = new Workflow(wfDef, this.nodeFactory, rtDef)
+    const secrets = await this.secretStore.listSecrets(req.user.address)
+
+    const workflow = new Workflow(wfDef, this.nodeFactory, secrets, rtDef)
     if (workflow.isFinished()) {
       return res
         .status(409)
@@ -377,7 +416,7 @@ export class Server {
     const wfDef = req.workflow as WorkflowDef // TODO: enfore this by types
     const rtDef = req.runtime as RuntimeDef // TODO: enfore this by types
 
-    const workflow = new Workflow(wfDef, this.nodeFactory, rtDef)
+    const workflow = new Workflow(wfDef, this.nodeFactory, [], rtDef)
     if (!workflow.isFinished()) {
       return res.status(206).json(wfDef)
     } else {

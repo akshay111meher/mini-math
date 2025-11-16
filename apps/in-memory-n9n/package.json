@@ -16,6 +16,7 @@
     "@mini-math/rbac": "^0.1.0",
     "@mini-math/remote-server": "*",
     "@mini-math/remote-worker": "*",
+    "@mini-math/secrets": "^0.1.0",
     "@mini-math/utils": "^0.1.0"
   },
   "devDependencies": {

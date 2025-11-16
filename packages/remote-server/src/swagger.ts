@@ -2,11 +2,13 @@ import { z } from 'zod'
 import { OpenAPIRegistry, OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi'
 import { WorkflowSchema, WorkflowCore } from '@mini-math/workflow'
 import { GrantOrRevokeRoleSchema } from '@mini-math/rbac'
+import { BaseSecretSchema, SecretDataSchema, SecretIdenfiferSchema } from '@mini-math/secrets'
 
 const ONLY_DEV = 'Only dev environment and for debugging. Do not integrate with UI'
 const PROD_READY = 'Supported in production'
 const AUTH = 'Authentication'
 const RBAC = 'RBAC'
+const SECRET = 'SECRET'
 
 export const StandardResponse = z
   .object({
@@ -381,6 +383,99 @@ registry.registerPath({
     },
     401: {
       description: 'When role is not revoked',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+  },
+  security: [{ cookieAuth: [] }],
+})
+
+registry.registerPath({
+  method: 'post',
+  path: '/storeSecret',
+  tags: [SECRET],
+  summary: 'Stores secrets for user',
+  request: {
+    body: {
+      content: {
+        'application/json': { schema: BaseSecretSchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'When secret is successfully stored',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+    429: {
+      description: 'When max number of secrets are stored successfully',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+  },
+  security: [{ cookieAuth: [] }],
+})
+
+registry.registerPath({
+  method: 'post',
+  path: '/removeSecret',
+  tags: [SECRET],
+  summary: 'Remove an existing stored secret',
+  request: {
+    body: {
+      content: {
+        'application/json': { schema: SecretIdenfiferSchema },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: 'When secret is successfully removed',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+    200: {
+      description: 'When secret is not removed',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+  },
+  security: [{ cookieAuth: [] }],
+})
+
+registry.registerPath({
+  method: 'post',
+  path: '/fetchSecret',
+  tags: [SECRET],
+  summary: 'Fetch A single secret with known identifier',
+  request: {
+    body: {
+      content: {
+        'application/json': { schema: SecretIdenfiferSchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'When secret is successfully removed',
+      content: { 'application/json': { schema: SecretDataSchema } },
+    },
+    404: {
+      description: 'When secret is not found',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+  },
+  security: [{ cookieAuth: [] }],
+})
+
+registry.registerPath({
+  method: 'get',
+  path: '/fetchAllSecretIdentifiers',
+  tags: [SECRET],
+  summary: 'Fetch all secret identifiers',
+  responses: {
+    200: {
+      description: 'When secrets are successully found',
+      content: { 'application/json': { schema: z.array(z.string()) } },
+    },
+    404: {
+      description: 'When secrets identifiers are not found',
       content: { 'application/json': { schema: StandardResponse } },
     },
   },

@@ -14,6 +14,13 @@ export class TestNode extends BaseNode {
     globalState.push(this.nodeDef.name || this.nodeDef.id)
     this.workflowGlobalState.setGlobalState(globalState)
 
+    const SECRET_IDENTIFIER = 'TEST_SECRET'
+    const secret = this.workflowGlobalState.getSecret(SECRET_IDENTIFIER)
+    if (secret) {
+      this.logger.info(`Found Secret: ${SECRET_IDENTIFIER} with value: ${secret}`)
+    } else {
+      this.logger.warn(`Secret: ${SECRET_IDENTIFIER} Not Found`)
+    }
     const out: Extract<OutputType, { type: 'string' }> = {
       id: uuidv4(),
       name: 'trigger',

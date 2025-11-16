@@ -11,6 +11,7 @@ import { NodeFactoryType } from '@mini-math/compiler'
 
 import { ClockResult, WorkflowDef } from './types.js'
 import { bfsTraverse, hasCycle, deepClone } from './helper.js'
+import { BaseSecretType } from '@mini-math/secrets'
 
 export class Workflow implements WorkflowGlobalState {
   private readonly logger: Logger
@@ -18,10 +19,18 @@ export class Workflow implements WorkflowGlobalState {
   private outgoing: Map<string, string[]> = new Map()
   private runtime: RuntimeDef
   private initialized = false
+  private secrets: Map<string, string> = new Map()
+
+  public static syntaxCheck(wf: WorkflowDef, nf: NodeFactoryType, rt?: RuntimeDef): Workflow {
+    const workflow = new Workflow(wf, nf, [], rt)
+    workflow.bfs()
+    return workflow
+  }
 
   constructor(
     private workflowDef: WorkflowDef,
     private nodeFactory: NodeFactoryType,
+    secrets: Array<BaseSecretType>,
     runtimeDef?: RuntimeDef,
   ) {
     this.logger = makeLogger(`Workflow ID: ${this.workflowDef.id}`)
@@ -40,6 +49,18 @@ export class Workflow implements WorkflowGlobalState {
     this._validateDefinition(this.workflowDef)
     this._buildIndexes()
     this._bootstrapRuntime()
+    for (let index = 0; index < secrets.length; index++) {
+      const secret = secrets[index]
+      this.secrets.set(secret.secretIdentifier, secret.secretData)
+    }
+  }
+
+  public getSecret(secretIdentifier: string): string | undefined {
+    if (this.secrets.has(secretIdentifier)) {
+      // need to decrypt here
+      return this.secrets.get(secretIdentifier)
+    }
+    return undefined
   }
 
   public getGlobalState<T = unknown>(): T | undefined {

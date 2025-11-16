@@ -10,6 +10,7 @@ import {
   PostgresWorkflowstore,
   PostgresRuntimeStore,
   PostgresRoleStore,
+  PostgresSecretStore,
   config as adapterConfig,
 } from '@mini-math/adapters'
 
@@ -28,6 +29,7 @@ const roleStore = new PostgresRoleStore(
   adapterConfig.getPostgresUrl(),
   adapterConfig.getInitPlatformOwner(),
 )
+const secretStore = new PostgresSecretStore(adapterConfig.getPostgresUrl())
 const sessionStore = new RedisStore(adapterConfig.getRedisUrl())
 
 export class App {
@@ -37,6 +39,7 @@ export class App {
       runtimeStore,
       nodeFactory,
       roleStore,
+      secretStore,
       queue,
       sessionStore,
       DOMAIN,
@@ -48,7 +51,14 @@ export class App {
   }
 
   public static async start_worker(workerName: string): Promise<void> {
-    const worker = new RemoteWorker(queue, workflowStore, runtimeStore, nodeFactory, workerName)
+    const worker = new RemoteWorker(
+      queue,
+      workflowStore,
+      runtimeStore,
+      secretStore,
+      nodeFactory,
+      workerName,
+    )
     return worker.start()
   }
 }
