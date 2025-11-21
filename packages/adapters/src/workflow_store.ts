@@ -124,6 +124,18 @@ export class PostgresWorkflowstore extends WorkflowStore {
         update.globalState = patch.globalState === undefined ? null : (patch.globalState as unknown)
       }
 
+      if ('lock' in patch && patch.lock !== undefined) {
+        update.lock = patch.lock
+      }
+
+      if ('inProgress' in patch && patch.inProgress !== undefined) {
+        update.inProgress = patch.inProgress
+      }
+
+      if ('isInitiated' in patch && patch.isInitiated !== undefined) {
+        update.isInitiated = patch.isInitiated
+      }
+
       if (Object.keys(update).length === 0) {
         // nothing to update, just return the current value
         return this._get(workflowId)

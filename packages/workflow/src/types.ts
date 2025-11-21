@@ -6,14 +6,20 @@ extendZodWithOpenApi(z)
 export const WorkflowRef = z.string().min(16)
 export type WorkflowRefType = z.infer<typeof WorkflowRef>
 
+export const Lock = z.object({ lockedBy: z.string(), lockedAt: z.number() }).openapi('Lock Details')
+export type LockType = z.infer<typeof Lock>
+
 export const WorkflowCore = z
   .object({
     name: z.string().max(255, 'Name must be at most 255 characters').optional(),
-    version: z.string().min(1).max(2),
-    nodes: z.array(NodeDef).min(1),
-    edges: z.array(EdgeDef),
+    version: z.string().min(1).max(2).openapi('Workflow Version'),
+    nodes: z.array(NodeDef).min(1).openapi('List of nodes in the workflow'),
+    edges: z.array(EdgeDef).openapi('Internode connections'),
     entry: NodeRef,
     globalState: z.unknown().optional(),
+    lock: Lock.optional(),
+    inProgress: z.boolean().optional(),
+    isInitiated: z.boolean().optional(),
   })
   .openapi('WorkflowCore')
 

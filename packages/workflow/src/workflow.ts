@@ -376,6 +376,14 @@ export class Workflow implements WorkflowGlobalState {
     return [wf, rt]
   }
 
+  public inProgress(): boolean {
+    return !!this.workflowDef.inProgress
+  }
+
+  public isInitiated(): boolean {
+    return !!this.workflowDef.isInitiated
+  }
+
   public isFinished(): boolean {
     const rt = this.runtime
     this.logger.trace(`Workflow ID: ${this.workflowDef.id} rt.finished=${rt.finished}`)

@@ -7,6 +7,7 @@ export class RabbitMQQueue<T> implements IQueue<T> {
   private connection: amqp.ChannelModel | undefined
   private channel: amqp.Channel | undefined
   private queueName: string
+  private delayQueueName: string
   private connectionUrl: string
   private inFlight: Map<string, amqp.Message> = new Map()
   private messageCallback?: (messageId: string, item: T) => Promise<void>
@@ -18,9 +19,10 @@ export class RabbitMQQueue<T> implements IQueue<T> {
   private initialized = false
   private initPromise: Promise<void> | null = null
 
-  constructor(connectionUrl: string, queueName: string) {
+  constructor(connectionUrl: string) {
     this.connectionUrl = connectionUrl
-    this.queueName = queueName
+    this.queueName = 'workflow_queue'
+    this.delayQueueName = 'delay_queue'
     this.logger = makeLogger('RabbitMq')
   }
 
@@ -57,10 +59,21 @@ export class RabbitMQQueue<T> implements IQueue<T> {
       })
 
       this.channel = await this.connection.createChannel()
+
+      await this.channel.assertQueue(this.delayQueueName, {
+        durable: true,
+        arguments: {
+          'x-dead-letter-exchange': '', // use default exchange
+          'x-dead-letter-routing-key': this.queueName, // send to this queue after TTL
+        },
+      })
+
       await this.channel.assertQueue(this.queueName, { durable: true })
+
       await this.channel.prefetch(1) // Process one message at a time per consumer
 
-      this.logger.info(`[RabbitMQ] Connected and queue '${this.queueName}' asserted.`)
+      this.logger.info(`[RabbitMQ] Connected '${this.queueName}' asserted.`)
+      this.logger.info(`[RabbitMQ] Connected '${this.delayQueueName}' asserted.`)
 
       if (this.messageCallback) {
         await this.setupConsumer()
@@ -91,7 +104,7 @@ export class RabbitMQQueue<T> implements IQueue<T> {
     }, 5000)
   }
 
-  async enqueue(item: T): Promise<string> {
+  async enqueue(item: T, delayMs: number = 0): Promise<string> {
     await this.ensureInitialized()
     if (!this.channel) {
       throw new Error('RabbitMQ channel is not available. Message not enqueued.')
@@ -100,10 +113,20 @@ export class RabbitMQQueue<T> implements IQueue<T> {
     const message: InternalMessage<T> = { messageId, item }
     const buffer = Buffer.from(JSON.stringify(message))
 
-    await this.channel.sendToQueue(this.queueName, buffer, {
-      persistent: true,
-      messageId,
-    })
+    if (delayMs <= 0) {
+      // in this case, send instantly
+      await this.channel.sendToQueue(this.queueName, buffer, {
+        persistent: true,
+        messageId,
+      })
+    } else {
+      // in this case, put in dead-queue
+      await this.channel.sendToQueue(this.delayQueueName, buffer, {
+        persistent: true,
+        messageId,
+        expiration: delayMs,
+      })
+    }
 
     return messageId
   }

@@ -23,14 +23,44 @@ export class InMemoryQueue<T> implements IQueue<T> {
     return
   }
 
-  async enqueue(item: T): Promise<string> {
+  async enqueue(item: T, delayMs: number = 0): Promise<string> {
     this.ensureOpen()
     const messageId = this.generateId()
-    this.queue.push({ messageId, item })
-    this.logger.trace(`enqueue -> queued=${this.queue.length} inflight=${this.inFlight.size}`, {
-      messageId,
-    })
-    queueMicrotask(() => this.kick())
+
+    if (delayMs <= 0) {
+      // immediate enqueue (what you already had)
+      this.queue.push({ messageId, item })
+      this.logger.trace(`enqueue -> queued=${this.queue.length} inflight=${this.inFlight.size}`, {
+        messageId,
+      })
+      queueMicrotask(() => this.kick())
+    } else {
+      // delayed enqueue
+      this.logger.trace(
+        `enqueue(delayed) -> delayMs=${delayMs} queued=${this.queue.length} inflight=${this.inFlight.size}`,
+        { messageId },
+      )
+
+      setTimeout(() => {
+        // when the delay expires, *then* push to the real queue
+        try {
+          this.ensureOpen()
+        } catch {
+          // queue was closed in the meantime; just drop it
+          this.logger.warn(`dropping delayed message because queue is closed`, { messageId })
+          return
+        }
+
+        this.queue.push({ messageId, item })
+        this.logger.trace(
+          `delayed visible -> queued=${this.queue.length} inflight=${this.inFlight.size}`,
+          { messageId },
+        )
+
+        queueMicrotask(() => this.kick())
+      }, delayMs)
+    }
+
     return messageId
   }
 

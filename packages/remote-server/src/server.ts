@@ -12,6 +12,7 @@ import {
   WorkflowStore,
   WorkflowCore,
   WorkflowDef,
+  WorkflowRefType,
 } from '@mini-math/workflow'
 import { NodeFactoryType } from '@mini-math/compiler'
 import { RuntimeDef, RuntimeStore } from '@mini-math/runtime'
@@ -19,7 +20,7 @@ import { getRoleAdmin, GrantOrRevokeRoleSchema, Role, RoleStore } from '@mini-ma
 
 import { makeLogger } from '@mini-math/logger'
 
-import { ID, openapiDoc } from './swagger.js'
+import { ID, openapiDoc, ScheduleWorkflowPayload } from './swagger.js'
 import {
   assignRequestId,
   createNewRuntime,
@@ -34,6 +35,7 @@ import {
   revertIfNoRole,
   deleteWorkflowIfExists,
   deleteRuntimeIfExists,
+  revertIfNotRightConditionForWorkflow,
 } from './middlewares/index.js'
 import { IQueue } from '@mini-math/queue'
 import { logout, verifySiwe } from './auth.js'
@@ -61,7 +63,7 @@ export class Server {
     private nodeFactory: NodeFactoryType,
     private roleStore: RoleStore,
     private secretStore: SecretStore,
-    private queue: IQueue<[WorkflowDef, RuntimeDef]>,
+    private queue: IQueue<WorkflowRefType>,
     private kvs: KeyValueStore,
     private domainWithPort: string,
     private siweDomain: string,
@@ -174,8 +176,21 @@ export class Server {
       revertIfNotWorkflowOwner(this.workflowStore),
       revertIfNoWorkflow(this.workflowStore),
       revertIfNoRuntime(this.runtimeStore),
+      revertIfNotRightConditionForWorkflow(this.secretStore, this.nodeFactory, false),
       this.handleInitiateWorkflow,
     )
+
+    this.app.post(
+      '/schedule',
+      requireAuth(),
+      validateBody(ScheduleWorkflowPayload),
+      revertIfNotWorkflowOwner(this.workflowStore),
+      revertIfNoWorkflow(this.workflowStore),
+      revertIfNoRuntime(this.runtimeStore),
+      revertIfNotRightConditionForWorkflow(this.secretStore, this.nodeFactory, true),
+      this.handleInitiateWorkflow,
+    )
+
     this.app.post(
       '/fetch',
       requireAuth(),
@@ -402,20 +417,18 @@ export class Server {
   }
 
   private handleInitiateWorkflow = async (req: Request, res: Response) => {
-    const wfDef = req.workflow as WorkflowDef // TODO: enfore this by types
-    const rtDef = req.runtime as RuntimeDef // TODO: enfore this by types
-
-    const secrets = await this.secretStore.listSecrets(req.user.address)
-
-    const workflow = new Workflow(wfDef, this.nodeFactory, secrets, rtDef)
-    if (workflow.isFinished()) {
-      return res
-        .status(409)
-        .json({ success: false, message: `Workflow ID: ${workflow.id()} already fullfilled` })
+    const id = req.workflow?.id
+    if (!id) {
+      return res.status(500).json({ status: false, message: 'Failed to initiate workflow' })
+    } else {
+      const delayTime = req.initiateWorkflowInMs || 0
+      const result = await Promise.all([
+        this.workflowStore.update(id, { isInitiated: true }),
+        this.queue.enqueue(id, delayTime),
+      ])
+      this.logger.trace(JSON.stringify(result))
+      return res.json({ success: true })
     }
-
-    this.queue.enqueue([wfDef, rtDef])
-    return res.json({ success: true })
   }
 
   private handleFetchWorkflowResult = async (req: Request, res: Response) => {
