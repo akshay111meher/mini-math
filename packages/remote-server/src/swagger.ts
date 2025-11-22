@@ -1,14 +1,17 @@
 import { z } from 'zod'
 import { OpenAPIRegistry, OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi'
-import { WorkflowSchema, WorkflowCore } from '@mini-math/workflow'
+import { WorkflowSchema, WorkflowCore, ExpectingInputFor } from '@mini-math/workflow'
 import { GrantOrRevokeRoleSchema } from '@mini-math/rbac'
 import { BaseSecretSchema, SecretDataSchema, SecretIdenfiferSchema } from '@mini-math/secrets'
+import { ExternalInputId, Input, NodeRef } from '@mini-math/nodes'
 
+const REVOKED = "This is revoked. Don't use this now"
 const ONLY_DEV = 'Only dev environment and for debugging. Do not integrate with UI'
 const PROD_READY = 'Supported in production'
 const AUTH = 'Authentication'
 const RBAC = 'RBAC'
 const SECRET = 'SECRET'
+const INPUT = 'Send External Input to workflow'
 
 export const StandardResponse = z
   .object({
@@ -24,7 +27,17 @@ export const ID = z
   .object({
     id: z.string(),
   })
-  .openapi('ID')
+  .openapi('workflowId')
+
+export const ExternalInputSchema = ID.extend({
+  nodeId: NodeRef,
+  externalInputId: ExternalInputId,
+  data: Input,
+})
+
+export const ScheduleWorkflowPayload = ID.extend({
+  initiateWorkflowInMs: z.number().positive().max(86400),
+})
 
 const registry = new OpenAPIRegistry()
 
@@ -142,7 +155,7 @@ registry.registerPath({
 registry.registerPath({
   method: 'post',
   path: '/clock',
-  tags: [ONLY_DEV],
+  tags: [REVOKED],
   summary: 'Clock existing workflow clocked by one unit',
   request: {
     body: {
@@ -151,25 +164,7 @@ registry.registerPath({
       },
     },
   },
-  responses: {
-    200: {
-      description: 'Return workflow clocked by one unit',
-      content: { 'application/json': { schema: WorkflowSchema } },
-    },
-    400: {
-      description: 'Bad request',
-      content: { 'application/json': { schema: StandardResponse } },
-    },
-    404: {
-      description: 'Workflow is not found',
-      content: { 'application/json': { schema: StandardResponse } },
-    },
-    409: {
-      description: 'Workflow is already fullfilled',
-      content: { 'application/json': { schema: StandardResponse } },
-    },
-  },
-  security: [{ cookieAuth: [] }],
+  responses: {},
 })
 
 registry.registerPath({
@@ -181,6 +176,31 @@ registry.registerPath({
     body: {
       content: {
         'application/json': { schema: ID },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Returns result of workflow initiation',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+    400: {
+      description: 'error',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+  },
+  security: [{ cookieAuth: [] }],
+})
+
+registry.registerPath({
+  method: 'post',
+  path: '/schedule',
+  tags: [PROD_READY],
+  summary: 'schedule the workflow in backend. (Does not return the output of any node tough)',
+  request: {
+    body: {
+      content: {
+        'application/json': { schema: ScheduleWorkflowPayload },
       },
     },
   },
@@ -212,11 +232,25 @@ registry.registerPath({
   responses: {
     200: {
       description: 'Returns workflow status when finished',
-      content: { 'application/json': { schema: WorkflowSchema } },
+      content: {
+        'application/json': {
+          schema: z.object({
+            status: z.string().describe('Value will be `finished`'),
+            result: WorkflowSchema,
+          }),
+        },
+      },
     },
     206: {
       description: 'Returns result of partial workflow',
-      content: { 'application/json': { schema: WorkflowSchema } },
+      content: {
+        'application/json': {
+          schema: z.object({
+            status: z.enum(['inProgress', 'initiated', 'awaitingInput', 'idle']),
+            expectingInputFor: ExpectingInputFor.optional(),
+          }),
+        },
+      },
     },
   },
   security: [{ cookieAuth: [] }],
@@ -433,6 +467,27 @@ registry.registerPath({
     },
     200: {
       description: 'When secret is not removed',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+  },
+  security: [{ cookieAuth: [] }],
+})
+
+registry.registerPath({
+  method: 'post',
+  path: '/externalInput',
+  tags: [INPUT],
+  summary: 'Send External Input to Workflow',
+  request: {
+    body: {
+      content: {
+        'application/json': { schema: ExternalInputSchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'When external input is successfully accepted',
       content: { 'application/json': { schema: StandardResponse } },
     },
   },

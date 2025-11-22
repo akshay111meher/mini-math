@@ -1,8 +1,11 @@
 import type { RequestHandler } from 'express'
 import type { WorkflowDef } from '@mini-math/workflow'
 import type { WorkflowStore } from '@mini-math/workflow'
-import { WorkflowStoreError } from '@mini-math/workflow'
+import { Workflow, WorkflowStoreError } from '@mini-math/workflow'
 import { makeLogger } from '@mini-math/logger'
+import { SecretStore } from '@mini-math/secrets'
+import { RuntimeDef } from '@mini-math/runtime'
+import { NodeFactoryType } from '@mini-math/compiler'
 
 const logger = makeLogger('workflow-middlewares')
 declare module 'express-serve-static-core' {
@@ -13,6 +16,50 @@ declare module 'express-serve-static-core' {
     workflowId?: string
     id?: string
     workflow?: WorkflowDef
+    initiateWorkflowInMs?: number
+  }
+}
+
+export function revertIfNotRightConditionForWorkflow(
+  secretStore: SecretStore,
+  nodeFactory: NodeFactoryType,
+  isScheduled: boolean,
+): RequestHandler {
+  return async (req, res, next) => {
+    const wfDef = req.workflow as WorkflowDef // TODO: enfore this by types
+    const rtDef = req.runtime as RuntimeDef // TODO: enfore this by types
+
+    const secrets = await secretStore.listSecrets(req.user.address)
+
+    const workflow = new Workflow(wfDef, nodeFactory, secrets, rtDef)
+
+    if (workflow.isInitiated()) {
+      return res.status(400).json({
+        success: false,
+        message: `Workflow ID: ${workflow.id()} already initiated/scheduled can't initiate again`,
+      })
+    }
+
+    if (workflow.inProgress()) {
+      return res.status(409).json({
+        success: false,
+        message: `Workflow ID: ${workflow.id()} already initiated and in progress`,
+      })
+    }
+
+    if (workflow.isFinished()) {
+      return res
+        .status(409)
+        .json({ success: false, message: `Workflow ID: ${workflow.id()} already fullfilled` })
+    }
+
+    if (isScheduled) {
+      req.initiateWorkflowInMs = req.body.initiateWorkflowInMs || 0
+    } else {
+      req.initiateWorkflowInMs = 0
+    }
+
+    return next()
   }
 }
 

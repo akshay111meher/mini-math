@@ -24,27 +24,30 @@ export abstract class RoleStore {
 
   async addRoleBySchema(body: GrantOrRevokeRoleType): Promise<void> {
     await this.ensureInitialized()
-    this._addRoleImpl(body.user, body.role)
+    const _hasRole = await this._hasRoleImpl(body.user, body.role)
+    if (!_hasRole) {
+      await this._addRoleImpl(body.user, body.role)
+    }
   }
 
   async setRoles(userId: string, roles: Role[]): Promise<void> {
     await this.ensureInitialized()
-    this._setRolesImpl(userId, roles)
+    await this._setRolesImpl(userId, roles)
   }
 
   async addRole(userId: string, role: Role): Promise<void> {
     await this.ensureInitialized()
-    this._addRoleImpl(userId, role)
+    await this._addRoleImpl(userId, role)
   }
 
   async removeRoleBySchema(body: GrantOrRevokeRoleType): Promise<void> {
     await this.ensureInitialized()
-    this._removeRoleImpl(body.user, body.role)
+    await this._removeRoleImpl(body.user, body.role)
   }
 
   async removeRole(userId: string, role: Role): Promise<void> {
     await this.ensureInitialized()
-    this._removeRoleImpl(userId, role)
+    await this._removeRoleImpl(userId, role)
   }
 
   async hasRole(userId: string, role: Role): Promise<boolean> {
@@ -54,7 +57,7 @@ export abstract class RoleStore {
 
   async clearRoles(userId: string): Promise<void> {
     await this.ensureInitialized()
-    this._clearRolesImpl(userId)
+    await this._clearRolesImpl(userId)
   }
 
   // ----- Storage-specific hooks (subclasses override these) -----

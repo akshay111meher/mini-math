@@ -1,8 +1,9 @@
 // db/schema/workflows.ts
-import { pgTable, varchar, text, jsonb, timestamp, index } from 'drizzle-orm/pg-core'
+import { pgTable, varchar, text, jsonb, timestamp, index, boolean } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 
 import type { NodeDefType, EdgeDefType, NodeRefType } from '@mini-math/nodes'
+import type { ExpectingInputForType, ExternalInputStorageType, LockType } from '@mini-math/workflow'
 
 export const workflows = pgTable(
   'workflows',
@@ -21,6 +22,21 @@ export const workflows = pgTable(
     entry: jsonb('entry').$type<NodeRefType>().notNull(),
     globalState: jsonb('global_state')
       .$type<unknown | null>()
+      .default(sql`null`),
+
+    // lock: optional JSONB blob that matches LockType
+    lock: jsonb('lock')
+      .$type<LockType | null>()
+      .default(sql`null`),
+
+    inProgress: boolean('in_progress').notNull().default(false),
+    isInitiated: boolean('is_initiated').notNull().default(false),
+    expectingInputFor: jsonb('expectingInputFor')
+      .$type<ExpectingInputForType | null>()
+      .default(sql`null`),
+
+    externalInputStorage: jsonb('externalInputStorage')
+      .$type<ExternalInputStorageType | null>()
       .default(sql`null`),
 
     // optional meta

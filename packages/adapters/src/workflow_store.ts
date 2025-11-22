@@ -106,8 +106,9 @@ export class PostgresWorkflowstore extends WorkflowStore {
         update.owner = patch.owner
       }
       if ('name' in patch) {
-        update.name = patch.name ?? null
+        update.name = patch.name === undefined ? undefined : (patch.name ?? null)
       }
+
       if ('version' in patch && patch.version !== undefined) {
         update.version = patch.version
       }
@@ -122,6 +123,28 @@ export class PostgresWorkflowstore extends WorkflowStore {
       }
       if ('globalState' in patch) {
         update.globalState = patch.globalState === undefined ? null : (patch.globalState as unknown)
+      }
+
+      if ('lock' in patch) {
+        update.lock = patch.lock === undefined ? null : patch.lock
+      }
+
+      if ('inProgress' in patch && patch.inProgress !== undefined) {
+        update.inProgress = patch.inProgress
+      }
+
+      if ('isInitiated' in patch && patch.isInitiated !== undefined) {
+        update.isInitiated = patch.isInitiated
+      }
+
+      if ('expectingInputFor' in patch) {
+        update.expectingInputFor =
+          patch.expectingInputFor === undefined ? null : patch.expectingInputFor
+      }
+
+      if ('externalInputStorage' in patch) {
+        update.externalInputStorage =
+          patch.externalInputStorage === undefined ? null : patch.externalInputStorage
       }
 
       if (Object.keys(update).length === 0) {
@@ -219,6 +242,13 @@ export class PostgresWorkflowstore extends WorkflowStore {
         edges: def.edges,
         entry: def.entry,
         globalState: def.globalState === undefined ? null : (def.globalState as unknown),
+
+        lock: def.lock === undefined ? null : def.lock,
+        inProgress: def.inProgress === undefined ? false : def.inProgress,
+        isInitiated: def.isInitiated === undefined ? false : def.isInitiated,
+        expectingInputFor: def.expectingInputFor === undefined ? null : def.expectingInputFor,
+        externalInputStorage:
+          def.externalInputStorage === undefined ? null : def.externalInputStorage,
       }
 
       const [row] = await this.db
@@ -234,6 +264,13 @@ export class PostgresWorkflowstore extends WorkflowStore {
             edges: insert.edges,
             entry: insert.entry,
             globalState: insert.globalState,
+
+            lock: insert.lock,
+            inProgress: insert.inProgress,
+            isInitiated: insert.isInitiated,
+            expectingInputFor: insert.expectingInputFor,
+            externalInputStorage: insert.externalInputStorage,
+
             updatedAt: sql`now()`,
           },
         })
@@ -266,13 +303,30 @@ function rowToDef(row: WorkflowRow): WorkflowDef {
     owner: row.owner,
     name: row.name ?? undefined,
     version: row.version,
-    nodes: row.nodes as WorkflowDef['nodes'],
-    edges: row.edges as WorkflowDef['edges'],
-    entry: row.entry as WorkflowDef['entry'],
+    nodes: row.nodes,
+    edges: row.edges,
+    entry: row.entry,
     globalState:
-      row.globalState === null || row.globalState === undefined
+      row.globalState === null || row.globalState === undefined ? undefined : row.globalState,
+
+    lock: row.lock === null || row.lock === undefined ? undefined : row.lock,
+
+    inProgress:
+      row.inProgress === null || row.inProgress === undefined ? undefined : row.inProgress,
+
+    isInitiated:
+      row.isInitiated === null || row.isInitiated === undefined ? undefined : row.isInitiated,
+
+    expectingInputFor:
+      row.expectingInputFor === null || row.expectingInputFor === undefined
         ? undefined
-        : (row.globalState as WorkflowDef['globalState']),
+        : row.expectingInputFor,
+
+    externalInputStorage:
+      row.externalInputStorage === null || row.externalInputStorage === undefined
+        ? undefined
+        : row.externalInputStorage,
+
     // if WorkflowDef carries timestamps, this matches that shape
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

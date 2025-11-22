@@ -1,3 +1,6 @@
+import { ExternalInputDataType, ExternalInputIdType } from './input.js'
+import { NodeRefType } from './node.js'
+
 export interface WorkflowGlobalState {
   getGlobalState<T = unknown>(): T | undefined
   setGlobalState<T>(value: T): void
@@ -7,4 +10,8 @@ export interface WorkflowGlobalState {
     opts?: { deep?: boolean },
   ): void
   getSecret(secretIdentifier: string): string | undefined
+  readExternalInput(
+    node: NodeRefType,
+    externalInputId: ExternalInputIdType,
+  ): ExternalInputDataType | undefined
 }

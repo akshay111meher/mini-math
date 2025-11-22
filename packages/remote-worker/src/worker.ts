@@ -1,60 +1,105 @@
 import { IQueue } from '@mini-math/queue'
 import { RuntimeDef, RuntimeStore } from '@mini-math/runtime'
-import { Workflow, WorkflowDef, WorkflowStore } from '@mini-math/workflow'
+import { Workflow, WorkflowDef, WorkflowRefType, WorkflowStore } from '@mini-math/workflow'
 import { SecretStore } from '@mini-math/secrets'
 import { Logger, makeLogger } from '@mini-math/logger'
 import { v4 } from 'uuid'
 import { NodeFactoryType } from '@mini-math/compiler'
 
+const WORKER_CLOCK_TIME_IN_MS = 100
+
 export class RemoteWorker {
   private logger: Logger
   private workerId: string
+  private workerClockTime: number
+  private workerName: string
+
   constructor(
-    private queue: IQueue<[WorkflowDef, RuntimeDef]>,
+    private queue: IQueue<WorkflowRefType>,
     private workflowStore: WorkflowStore,
     private runtimeStore: RuntimeStore,
     private secretStore: SecretStore,
     private nodeFactory: NodeFactoryType,
     name: string,
   ) {
+    this.workerClockTime = WORKER_CLOCK_TIME_IN_MS
     this.workerId = v4()
     this.logger = makeLogger(`Remote Worker: ${name}: ID: ${this.workerId}`)
+    this.workerName = name
     this.configure()
   }
 
   private configure(): void {
-    this.queue.onMessage(async (messageId: string, message: [WorkflowDef, RuntimeDef]) => {
+    this.queue.onMessage(async (messageId: string, wfId: WorkflowRefType) => {
       try {
         this.logger.debug(`Received message. MessageId: ${messageId}`)
-        const secrets = await this.secretStore.listSecrets(message[0].owner)
+        const lock = await this.workflowStore.acquireLock(wfId, this.workerName)
+        if (lock) {
+          this.logger.debug(`Acquired lock on workflow ${wfId} successfully`)
+          const wf = await this.workflowStore.get(wfId)
+          const rt = await this.runtimeStore.get(wfId)
+          wf.inProgress = true
 
-        const [wfSnap, rtSnap] = message
-        const workflow = new Workflow(wfSnap, this.nodeFactory, secrets, rtSnap)
+          const secrets = await this.secretStore.listSecrets(wf.owner)
 
-        if (workflow.isFinished()) {
-          await this.queue.ack(messageId)
-          return
-        }
+          const workflow = new Workflow(wf, this.nodeFactory, secrets, rt.serialize())
 
-        const info = await workflow.clock()
-        this.logger.debug(`Clocked workflow: ${workflow.id()}`)
-        this.logger.trace(JSON.stringify(info))
+          if (workflow.isFinished()) {
+            const result = await Promise.all([
+              this.workflowStore.update(wfId, { inProgress: false, isInitiated: false }),
+              this.queue.ack(messageId),
+            ])
+            this.logger.trace(JSON.stringify(result))
+            return
+          }
 
-        const [wfNext, rtNext] = workflow.serialize()
+          const info = await workflow.clock()
+          this.logger.debug(`Clocked workflow: ${workflow.id()}`)
+          this.logger.trace(JSON.stringify(info))
 
-        await Promise.all([
-          this.workflowStore.update(workflow.id(), wfNext),
-          this.runtimeStore.update(workflow.id(), rtNext),
-        ])
+          if (info.status == 'waiting_for_input') {
+            this.logger.debug(
+              `Workflow ID: ${wfId} has been paused, as it is expecting input: ${JSON.stringify(info)}`,
+            )
+            const result = await this.workflowStore.update(workflow.id(), {
+              expectingInputFor: info.expectingInputFor,
+            })
+            this.logger.trace(JSON.stringify(result))
 
-        await this.queue.ack(messageId)
+            const result2 = await Promise.all([
+              this.workflowStore.releaseLock(wfId),
+              this.queue.ack(messageId),
+            ])
+            this.logger.trace(JSON.stringify(result2))
+            return
+          }
 
-        // Best: schedule, fire-and-forget, but catch errors so they don't become unhandled rejections
-        queueMicrotask(() => {
-          void this.queue.enqueue([wfNext, rtNext]).catch((err) => {
-            this.logger.error('re-enqueue failed', { err })
+          this.logger.trace(`Clock Status of workflow: ${info.status}`)
+
+          const [wfNext, rtNext] = workflow.serialize()
+
+          const result = await Promise.all([
+            this.workflowStore.update(workflow.id(), wfNext),
+            this.runtimeStore.update(workflow.id(), rtNext),
+          ])
+          this.logger.trace(JSON.stringify(result))
+
+          const result2 = await Promise.all([
+            this.workflowStore.releaseLock(wfId),
+            this.queue.ack(messageId),
+          ])
+          this.logger.trace(JSON.stringify(result2))
+          this.logger.debug(`Released lock on workflow ${wfId} successfully`)
+
+          // Best: schedule, fire-and-forget, but catch errors so they don't become unhandled rejections
+          queueMicrotask(() => {
+            void this.queue.enqueue(wfId, this.workerClockTime).catch((err) => {
+              this.logger.error('re-enqueue failed', { err })
+            })
           })
-        })
+        } else {
+          await this.queue.nack(messageId, true)
+        }
       } catch (err) {
         await this.queue.nack(messageId, true)
         this.logger.error(`Worker error: ${(err as Error).message}`)

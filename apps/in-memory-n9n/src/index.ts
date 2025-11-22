@@ -1,8 +1,8 @@
 // src/main.ts
 import { NodeFactory } from '@mini-math/compiler'
 import { Server } from '@mini-math/remote-server'
-import { InMemoryRuntimeStore, RuntimeDef } from '@mini-math/runtime'
-import { InMemoryWorkflowStore, WorkflowDef } from '@mini-math/workflow'
+import { InMemoryRuntimeStore } from '@mini-math/runtime'
+import { InMemoryWorkflowStore, WorkflowRefType } from '@mini-math/workflow'
 import { RemoteWorker } from '@mini-math/remote-worker'
 import { InMemoryKeyValueStore } from '@mini-math/keystore'
 import { InMemoryRoleStore } from '@mini-math/rbac'
@@ -12,7 +12,7 @@ import { InMemorySecretStore } from '@mini-math/secrets'
 
 const INIT_PLATFORM_OWNER = '0x29e78bB5ef59a7fa66606c665408D6E680F5a06f'
 const nodeFactory = new NodeFactory()
-const queue = new InMemoryQueue<[WorkflowDef, RuntimeDef]>()
+const queue = new InMemoryQueue<WorkflowRefType>()
 const workflowStore = new InMemoryWorkflowStore()
 const runtimeStore = new InMemoryRuntimeStore()
 const sessionStore = new InMemoryKeyValueStore()

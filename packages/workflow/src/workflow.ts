@@ -4,12 +4,22 @@ import {
   ExecutionResult,
   WorkflowGlobalState,
   ExecutionTimestamp,
+  NodeDefClass,
+  ExternalInputDataType,
+  ExternalInputIdType,
+  NodeRefType,
+  InputType,
 } from '@mini-math/nodes'
 import { Logger, makeLogger } from '@mini-math/logger'
 import { RuntimeDef } from '@mini-math/runtime'
 import { NodeFactoryType } from '@mini-math/compiler'
 
-import { ClockResult, WorkflowDef } from './types.js'
+import {
+  ClockResult,
+  ExpectingInputForType,
+  WorkflowDef,
+  ExternalInputStorageType,
+} from './types.js'
 import { bfsTraverse, hasCycle, deepClone } from './helper.js'
 import { BaseSecretType } from '@mini-math/secrets'
 
@@ -53,6 +63,17 @@ export class Workflow implements WorkflowGlobalState {
       const secret = secrets[index]
       this.secrets.set(secret.secretIdentifier, secret.secretData)
     }
+  }
+
+  public hasExternalInput(): boolean {
+    return this.workflowDef.nodes.some((n) => (n.externalInputs?.length ?? 0) > 0)
+  }
+
+  public readExternalInput(
+    node: NodeRefType,
+    externalInputId: ExternalInputIdType,
+  ): ExternalInputDataType | undefined {
+    return this.workflowDef.externalInputStorage?.[node]?.[externalInputId]
   }
 
   public getSecret(secretIdentifier: string): string | undefined {
@@ -117,6 +138,12 @@ export class Workflow implements WorkflowGlobalState {
     for (const n of wf.nodes) {
       if (!n || typeof n.id !== 'string' || n.id.trim() === '') {
         throw new Error('Every node must have a non-empty string "id"')
+      }
+
+      if (new NodeDefClass(n).hasUniqueExternalInputIds()) {
+        // this is fine
+      } else {
+        throw new Error(`Node:${n.id}} doesn't have unique external inputs`)
       }
       if (ids.has(n.id)) dups.push(n.id)
       ids.add(n.id)
@@ -202,12 +229,37 @@ export class Workflow implements WorkflowGlobalState {
       return { status: 'error', code: ERROR_CODES.WORKFLOW_IS_ALREADY_EXECUTED }
     }
 
+    this.workflowDef.inProgress = true
     if (rt.queue.length === 0) {
       this._finalizeIfPossible()
       return { status: 'finished' }
     }
 
     const { nodeId: currentNodeId, node: currentNode } = this._dequeueAndMark()
+
+    const missingExternalInputId = this._getNextMissingExternalInputId(currentNode)
+
+    if (missingExternalInputId) {
+      this.logger.debug(
+        `Workflow ID: ${this.workflowDef.id} node=${currentNodeId} is waiting for external input: ${missingExternalInputId}`,
+      )
+
+      const expectingInputFor = {
+        node: currentNodeId,
+        inputId: missingExternalInputId,
+      }
+
+      this.logger.trace(JSON.stringify(this.workflowDef.expectingInputFor))
+
+      this.runtime.queue.unshift(currentNodeId)
+      this.runtime.current = null
+
+      return {
+        status: 'waiting_for_input',
+        node: currentNode,
+        expectingInputFor,
+      }
+    }
 
     const execResult = await this._safeRunNode(currentNode)
     this.logger.trace(`execResult: ${JSON.stringify(execResult)}`)
@@ -376,13 +428,6 @@ export class Workflow implements WorkflowGlobalState {
     return [wf, rt]
   }
 
-  public isFinished(): boolean {
-    const rt = this.runtime
-    this.logger.trace(`Workflow ID: ${this.workflowDef.id} rt.finished=${rt.finished}`)
-    this.logger.trace(`Workflow ID: ${this.workflowDef.id} rt.queue.length=${rt.queue.length}`)
-    return rt.finished === true || rt.queue.length === 0
-  }
-
   private static isPlainObject(x: unknown): x is Record<string, unknown> {
     return typeof x === 'object' && x !== null && Object.getPrototypeOf(x) === Object.prototype
   }
@@ -425,5 +470,77 @@ export class Workflow implements WorkflowGlobalState {
         },
       }
     }
+  }
+
+  private _getNextMissingExternalInputId(node: NodeDefType): ExternalInputIdType | undefined {
+    const defs = node.externalInputs ?? []
+    if (defs.length === 0) return undefined
+
+    const storageForNode = this.workflowDef.externalInputStorage?.[node.id as NodeRefType] ?? {}
+
+    // Go in order; skip already-present ones; stop at first missing
+    for (const ext of defs) {
+      const hasValue = storageForNode[ext.id] !== undefined
+
+      if (!hasValue) {
+        return ext.id
+      }
+    }
+
+    // All inputs present → nothing missing
+    return undefined
+  }
+
+  // status functions
+  public inProgress(): boolean {
+    return !!this.workflowDef.inProgress
+  }
+
+  public isInitiated(): boolean {
+    return !!this.workflowDef.isInitiated
+  }
+
+  public expectingInputFor(): ExpectingInputForType | undefined {
+    if (this.workflowDef.expectingInputFor) {
+      return deepClone(this.workflowDef.expectingInputFor)
+    }
+    return undefined
+  }
+
+  public isFinished(): boolean {
+    const rt = this.runtime
+    this.logger.trace(`Workflow ID: ${this.workflowDef.id} rt.finished=${rt.finished}`)
+    this.logger.trace(`Workflow ID: ${this.workflowDef.id} rt.queue.length=${rt.queue.length}`)
+    return rt.finished === true || rt.queue.length === 0
+  }
+
+  public appendExternalInput(
+    nodeId: NodeRefType,
+    externalInputId: ExternalInputIdType,
+    data: InputType,
+  ): ExternalInputStorageType {
+    // Start from existing storage or an empty one
+    const currentStorage: ExternalInputStorageType = this.workflowDef.externalInputStorage ?? {}
+
+    const nodeKey: string = nodeId
+    const externalKey: string = externalInputId
+
+    const currentNodeInputs = currentStorage[nodeKey] ?? {}
+
+    const updatedNodeInputs: Record<string, ExternalInputDataType> = {
+      ...currentNodeInputs,
+      [externalKey]: {
+        id: externalInputId,
+        data,
+      },
+    }
+
+    const updatedStorage: ExternalInputStorageType = {
+      ...currentStorage,
+      [nodeKey]: updatedNodeInputs,
+    }
+
+    // return a deep-cloned snapshot
+    return deepClone(updatedStorage)
   }
 }

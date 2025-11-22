@@ -27,3 +27,15 @@ services:
     ports:
       - '5432:5432'
     restart: unless-stopped
+    # 🔍 Postgres UI (no login screen, uses DATABASE_URL)
+  pgweb:
+    image: sosedoff/pgweb:latest
+    container_name: pgweb-ephemeral
+    environment:
+      # Docker DNS uses the *service name* ("postgres"), not container_name
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+    depends_on:
+      - postgres
+    ports:
+      - '8081:8081'
+    restart: unless-stopped

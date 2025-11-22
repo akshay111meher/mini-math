@@ -1,0 +1,1 @@
+ALTER TABLE "workflows" ADD COLUMN "lock" jsonb DEFAULT null;

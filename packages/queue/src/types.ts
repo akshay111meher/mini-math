@@ -10,7 +10,7 @@ export interface IQueue<T> {
    * Enqueue an item into the queue.
    * Returns a unique message ID for tracking.
    */
-  enqueue(item: T): Promise<string>
+  enqueue(item: T, delay?: number): Promise<string>
 
   /**
    * Set up a callback to be triggered when new messages arrive.

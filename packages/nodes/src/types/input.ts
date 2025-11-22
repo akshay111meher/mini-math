@@ -64,24 +64,6 @@ const _InputJson = z.object({
 export const Input = z
   .discriminatedUnion('type', [_InputString, _InputNumber, _InputBoolean, _InputJson])
   .openapi('Input')
-
-// export const Input = z
-//   .object({
-//     id: z.string().optional(),
-//     name: z.string(),
-//     type: z.union([
-//       z.literal('string'),
-//       z.literal('number'),
-//       z.literal('boolean'),
-//       z.literal('json'),
-//     ]),
-//     value: z.any().openapi({
-//       description: 'Value of the input — may be string, number, boolean, or arbitrary JSON',
-//     }),
-//     required: z.boolean().optional(),
-//   })
-//   .openapi('InputGeneric')
-
 export type InputType = z.infer<typeof Input>
 
 export class InputDefClass {
@@ -111,3 +93,18 @@ export class InputDefClass {
     return this.inputDef
   }
 }
+
+export const ExternalInputId = z.string().min(2)
+export type ExternalInputIdType = z.infer<typeof ExternalInputId>
+
+export const ExternalInput = z.object({
+  id: ExternalInputId,
+  name: z.string().min(2).max(24).optional(),
+})
+export type ExternalInputType = z.infer<typeof ExternalInput>
+
+export const ExternalInputData = z.object({
+  id: ExternalInputId,
+  data: Input,
+})
+export type ExternalInputDataType = z.infer<typeof ExternalInputData>

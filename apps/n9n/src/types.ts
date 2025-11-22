@@ -1,8 +1,7 @@
 // src/main.ts
 import { NodeFactory } from '@mini-math/compiler'
 import { Server } from '@mini-math/remote-server'
-import { RuntimeDef } from '@mini-math/runtime'
-import { WorkflowDef } from '@mini-math/workflow'
+import { WorkflowRefType } from '@mini-math/workflow'
 import { RemoteWorker } from '@mini-math/remote-worker'
 import {
   RedisStore,
@@ -19,10 +18,7 @@ import { config } from 'dotenv'
 config()
 
 const nodeFactory = new NodeFactory()
-const queue = new RabbitMQQueue<[WorkflowDef, RuntimeDef]>(
-  adapterConfig.getRabbitMqUrl(),
-  'workflow_queue',
-)
+const queue = new RabbitMQQueue<WorkflowRefType>(adapterConfig.getRabbitMqUrl())
 const workflowStore = new PostgresWorkflowstore(adapterConfig.getPostgresUrl())
 const runtimeStore = new PostgresRuntimeStore(adapterConfig.getPostgresUrl())
 const roleStore = new PostgresRoleStore(

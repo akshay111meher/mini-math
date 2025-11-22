@@ -1,4 +1,4 @@
-import { WorkflowCoreType, type WorkflowDef } from './types.js'
+import { LockType, WorkflowCoreType, type WorkflowDef } from './types.js'
 
 export type WorkflowStoreErrorCode =
   | 'ALREADY_EXISTS'
@@ -80,6 +80,50 @@ export abstract class WorkflowStore {
   public async replace(workflowId: string, def: WorkflowDef): Promise<WorkflowDef> {
     await this.ensureInitialized()
     return this._replace(workflowId, def)
+  }
+
+  public async lockedBy(workflowId: string): Promise<string | undefined> {
+    await this.ensureInitialized()
+    const wf = await this._get(workflowId)
+
+    return wf.lock?.lockedBy
+  }
+  public async isLocked(workflowId: string, entity: string): Promise<boolean> {
+    await this.ensureInitialized()
+    const wf = await this._get(workflowId)
+    const lock = wf.lock
+    if (lock) {
+      if (lock.lockedBy == entity) {
+        return true
+      }
+      return false
+    }
+    return false
+  }
+
+  public async acquireLock(workflowId: string, entity: string): Promise<boolean> {
+    await this.ensureInitialized()
+    const isLocked = await this.isLocked(workflowId, entity)
+    if (isLocked) {
+      return false
+    }
+    return await this._lock(workflowId, entity)
+  }
+
+  public async releaseLock(workflowId: string): Promise<boolean> {
+    await this.ensureInitialized()
+    return await this._unlock(workflowId)
+  }
+
+  protected async _lock(workflowId: string, entity: string): Promise<boolean> {
+    const lock: LockType = { lockedBy: entity, lockedAt: new Date().valueOf() }
+    await this._update(workflowId, { lock })
+    return true
+  }
+
+  protected async _unlock(workflowId: string): Promise<boolean> {
+    await this._update(workflowId, { lock: undefined })
+    return true
   }
 
   // -------------------------------------------------------------------------

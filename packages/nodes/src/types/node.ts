@@ -1,5 +1,5 @@
 import z from 'zod'
-import { Input, InputDefClass, InputType } from './input.js'
+import { ExternalInput, Input, InputDefClass, InputType } from './input.js'
 import { Output, OutputDefClass, OutputType } from './output.js'
 
 export const NodeRef = z.string().min(16)
@@ -39,6 +39,7 @@ export const NodeDef = z
     executed: z.boolean().default(false),
     executionTimestamp: ExecutionTimestamp.optional(),
     code: z.string().optional(),
+    externalInputs: z.array(ExternalInput).max(10).optional(),
   })
   .openapi('Node')
 
@@ -86,6 +87,20 @@ export class NodeDefClass {
 
   getOutputs(): OutputDefClass[] {
     return this.nodeDef.outputs.map((o: OutputType) => new OutputDefClass(o))
+  }
+
+  hasUniqueExternalInputIds(): boolean {
+    const inputs = this.nodeDef.externalInputs ?? []
+    const seen = new Set<string>()
+
+    for (const ext of inputs) {
+      if (seen.has(ext.id)) {
+        return false
+      }
+      seen.add(ext.id)
+    }
+
+    return true
   }
 
   // Optional: whole-object accessor
