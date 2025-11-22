@@ -6,7 +6,7 @@ import { Logger, makeLogger } from '@mini-math/logger'
 import { v4 } from 'uuid'
 import { NodeFactoryType } from '@mini-math/compiler'
 
-const WORKER_CLOCK_TIME_IN_MS = 2000
+const WORKER_CLOCK_TIME_IN_MS = 100
 
 export class RemoteWorker {
   private logger: Logger
