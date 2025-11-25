@@ -17,6 +17,7 @@ import { CdpTransactionNode } from './CdpTransaction.js'
 import { TransferFundsNode } from './TransferFunds.js'
 import { TestNode } from './Test.js'
 import { CoinGekkoNode } from './CoinGekko.js'
+import { CdpSignNode } from './CdpSign.js'
 
 export interface NodeFactoryType {
   make(node: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState): ExecutableNodeBase
@@ -44,7 +45,7 @@ export class NodeFactory implements NodeFactoryType {
     } else if (node.type == NodeType.variable) {
       return new VariableNode(node, workflowGlobalStateRef)
     } else if (node.type == NodeType.smartContract) {
-      return new SmartContractNode(node, workflowGlobalStateRef)
+      return new CdpSmartContract(node, workflowGlobalStateRef)
     } else if (node.type == NodeType.cdpSmartContract) {
       return new CdpSmartContract(node, workflowGlobalStateRef)
     } else if (node.type == NodeType.contractRead) {
@@ -59,6 +60,14 @@ export class NodeFactory implements NodeFactoryType {
       return new TestNode(node, workflowGlobalStateRef)
     } else if (node.type == NodeType.coingeckoFetchPrice) {
       return new CoinGekkoNode(node, workflowGlobalStateRef)
+    } else if (node.type == NodeType.cdpSign) {
+      return new CdpSignNode(node, workflowGlobalStateRef)
+    } else if (node.type == NodeType.decimalWallet) {
+      return new CdpWalletNode(node, workflowGlobalStateRef)
+    } else if (node.type == NodeType.decimalTransaction) {
+      return new CdpTransactionNode(node, workflowGlobalStateRef)
+    } else if (node.type == NodeType.eip712Sign) {
+      return new CdpSignNode(node, workflowGlobalStateRef)
     }
     throw new Error('node.type not defined')
   }
