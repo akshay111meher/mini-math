@@ -5,7 +5,7 @@ import helmet from 'helmet'
 import swaggerUi from 'swagger-ui-express'
 
 import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi'
-import cors from 'cors';
+import cors from 'cors'
 
 import {
   Workflow,

@@ -105,7 +105,7 @@ export async function main() {
 
   await sleep(1000)
   for (;;) {
-    let workflow_fetch_result = await client.post<{
+    const workflow_fetch_result = await client.post<{
       status: string
       result?: object
       expectingInputFor?: {

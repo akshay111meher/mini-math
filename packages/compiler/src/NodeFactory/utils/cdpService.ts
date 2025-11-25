@@ -219,8 +219,6 @@ export class CdpService {
     description?: string
   }): Promise<{ transactionHash: string; status: string; network: string }> {
     try {
-
-
       // First, get or create the account
       const account = await this.createOrGetAccount(params.accountName)
 
@@ -236,8 +234,6 @@ export class CdpService {
         },
         network: cdpNetwork as any,
       })
-
-
 
       return {
         transactionHash: transactionResult.transactionHash,
@@ -271,8 +267,6 @@ export class CdpService {
     }
   }> {
     try {
-
-
       // First, get or create the account
       const account = await this.createOrGetAccount(params.accountName)
 
@@ -295,8 +289,6 @@ export class CdpService {
         network: cdpNetwork as any,
       })
 
-
-
       const result: {
         userOpHash: string
         status: string
@@ -316,7 +308,6 @@ export class CdpService {
 
       // If confirmation is requested, wait for it
       if (params.waitForConfirmation) {
-
         const confirmation = await this.waitForTransactionConfirmation(
           transferResult.transactionHash,
           params.network,
@@ -342,14 +333,13 @@ export class CdpService {
   private getExplorerLink(hash: string, network: string): string {
     const baseUrls: Record<string, string> = {
       'base-sepolia': 'https://sepolia.basescan.org/tx/',
-      'base': 'https://basescan.org/tx/',
+      base: 'https://basescan.org/tx/',
       'ethereum-sepolia': 'https://sepolia.etherscan.io/tx/',
-      'ethereum': 'https://etherscan.io/tx/',
+      ethereum: 'https://etherscan.io/tx/',
     }
     const baseUrl = baseUrls[network] || 'https://etherscan.io/tx/'
     return `${baseUrl}${hash}`
   }
-
 
   public async invokeContract(params: {
     accountName: string
@@ -370,8 +360,6 @@ export class CdpService {
     blockNumber?: number
   }> {
     try {
-
-
       // First, get or create the account
       const account = await this.createOrGetAccount(params.accountName)
 
@@ -379,7 +367,6 @@ export class CdpService {
       const cdpNetwork = this.mapNetworkToCdp(params.network)
 
       // Execute the contract call using CDP SDK with encoded function data
-
 
       // Import viem for function encoding
       const { encodeFunctionData } = await import('viem')
@@ -401,8 +388,6 @@ export class CdpService {
         },
         network: cdpNetwork as any,
       })
-
-
 
       return {
         transactionHash: transactionResult.transactionHash,
@@ -467,8 +452,6 @@ export class CdpService {
         message,
       })
 
-
-
       return {
         signature,
         address: accountAddress,
@@ -513,8 +496,6 @@ export class CdpService {
     confirmations: number
   }> {
     try {
-
-
       // Import viem for blockchain interaction
       const { createPublicClient, http } = await import('viem')
       const { baseSepolia, base, sepolia, mainnet } = await import('viem/chains')
@@ -545,8 +526,6 @@ export class CdpService {
         hash: transactionHash as `0x${string}`,
       })
 
-
-
       return {
         status: 'confirmed',
         blockNumber: receipt.blockNumber.toString(),
@@ -568,7 +547,6 @@ export class CdpService {
     try {
       // Test the connection by making a simple call
 
-
       // Check if required environment variables are set
       const requiredEnvVars = ['CDP_API_KEY_ID', 'CDP_API_KEY_SECRET', 'CDP_WALLET_SECRET']
       const missingVars = requiredEnvVars.filter((varName) => !process.env[varName])
@@ -582,7 +560,6 @@ export class CdpService {
       }
 
       // Test CDP connection with a simple operation
-
     } catch (error) {
       console.error('Failed to initialize CDP service:', error)
       console.warn('CDP functionality will be disabled due to initialization failure')
@@ -619,5 +596,3 @@ export class CdpService {
 }
 
 export const cdpService = CdpService.getInstance()
-
-

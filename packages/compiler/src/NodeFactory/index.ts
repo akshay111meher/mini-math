@@ -45,7 +45,7 @@ export class NodeFactory implements NodeFactoryType {
     } else if (node.type == NodeType.variable) {
       return new VariableNode(node, workflowGlobalStateRef)
     } else if (node.type == NodeType.smartContract) {
-      return new CdpSmartContract(node, workflowGlobalStateRef)
+      return new SmartContractNode(node, workflowGlobalStateRef)
     } else if (node.type == NodeType.cdpSmartContract) {
       return new CdpSmartContract(node, workflowGlobalStateRef)
     } else if (node.type == NodeType.contractRead) {

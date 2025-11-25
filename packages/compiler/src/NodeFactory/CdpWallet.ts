@@ -40,8 +40,6 @@ export class CdpWalletNode extends BaseNode {
     const nodeConfig: CdpWalletNodeConfig = CdpWalletNodeConfigSchema.parse(raw)
     const { walletType, network, checkBalance, requestFaucet, ownerAddress } = nodeConfig
 
-
-
     if (walletType === 'masterwallet-manual') {
       throw new Error('Manual wallet flow not implemented')
     }
@@ -56,15 +54,12 @@ export class CdpWalletNode extends BaseNode {
       accountName = `subwallet-${this.nodeDef.id}`
     }
 
-
     const account = await cdpService.createOrGetAccount(accountName)
 
     if (checkBalance) {
-
     }
 
     if (requestFaucet) {
-
       await cdpService.requestFaucet(account.address, network)
     }
 
@@ -73,12 +68,12 @@ export class CdpWalletNode extends BaseNode {
       network,
       walletType,
       accountName,
-      ownerAddress
+      ownerAddress,
     }
 
     // Update global state with wallet info so other nodes can use it
     this.workflowGlobalState.updatePartialState({
-      wallet: result
+      wallet: result,
     })
 
     const out: Extract<OutputType, { type: 'json' }> = {

@@ -22,7 +22,7 @@ export class TestNode extends BaseNode {
       this.logger.warn(`Secret: ${SECRET_IDENTIFIER} Not Found`)
     }
 
-    let externalInputIds = (this.nodeDef.externalInputs || []).map((a) => a.id)
+    const externalInputIds = (this.nodeDef.externalInputs || []).map((a) => a.id)
     if (externalInputIds) {
       // if defined let see whether they are visible here
       for (let index = 0; index < externalInputIds.length; index++) {

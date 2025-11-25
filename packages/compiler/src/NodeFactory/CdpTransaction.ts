@@ -52,9 +52,7 @@ export class CdpTransactionNode extends BaseNode {
     const network = walletInfo.network || 'base-sepolia'
     const accountName = walletInfo.accountName
 
-
-
-    let result;
+    let result
     if (tokenType === 'eth') {
       // Use transferWithSmartAccount for ETH (it handles it as a token or native?)
       // cdpService.transferWithSmartAccount takes 'token' param.
@@ -69,7 +67,7 @@ export class CdpTransactionNode extends BaseNode {
         amount,
         token: 'eth', // Assuming 'eth' is valid for cdp sdk
         description,
-        waitForConfirmation: true
+        waitForConfirmation: true,
       })
     } else {
       // Custom token
@@ -81,7 +79,7 @@ export class CdpTransactionNode extends BaseNode {
         amount,
         token,
         description,
-        waitForConfirmation: true
+        waitForConfirmation: true,
       })
     }
 

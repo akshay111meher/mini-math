@@ -43,11 +43,10 @@ export class CdpSmartContract extends BaseNode {
       throw new Error('Manual wallet flow not implemented')
     }
 
-    const { contractAddress, abi, selectedFunction, parameters, gasLimit, priority, description } = nodeConfig
+    const { contractAddress, abi, selectedFunction, parameters, gasLimit, priority, description } =
+      nodeConfig
     const network = walletInfo.network || 'base-sepolia'
     const accountName = walletInfo.accountName
-
-
 
     let parsedAbi: any[]
     try {
@@ -65,7 +64,7 @@ export class CdpSmartContract extends BaseNode {
       args: parameters,
       gasLimit,
       priority,
-      description
+      description,
     })
 
     const out: Extract<OutputType, { type: 'json' }> = {
