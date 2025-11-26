@@ -4,6 +4,16 @@ import { z } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
 import { cdpService } from './utils/cdpService.js'
 
+interface WalletInfo {
+  walletType: string
+  accountName: string
+  network?: string
+}
+
+interface WalletGlobalState {
+  wallet?: WalletInfo
+}
+
 const CdpTransactionNodeConfigSchema = z.object({
   recipientAddress: z.string(),
   amount: z.string(),
@@ -31,7 +41,7 @@ export class CdpTransactionNode extends BaseNode {
     // Check for manual mode in config or global state
     // The user wants "manual wallet flow not implemented" if it's manual.
     // We check the wallet info from global state.
-    const globalState = this.workflowGlobalState.getGlobalState<any>()
+    const globalState = this.workflowGlobalState.getGlobalState<WalletGlobalState>() ?? {}
     const walletInfo = globalState.wallet
 
     if (!walletInfo) {

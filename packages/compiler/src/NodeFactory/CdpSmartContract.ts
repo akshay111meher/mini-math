@@ -3,12 +3,23 @@ import { makeLogger, Logger } from '@mini-math/logger'
 import { z } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
 import { cdpService } from './utils/cdpService.js'
+import type { Abi } from 'viem'
+
+interface WalletInfo {
+  walletType: string
+  accountName: string
+  network?: string
+}
+
+interface WalletGlobalState {
+  wallet?: WalletInfo
+}
 
 const CdpSmartContractConfigSchema = z.object({
   contractAddress: z.string(),
   abi: z.string(),
   selectedFunction: z.string(),
-  parameters: z.array(z.any()).optional().default([]),
+  parameters: z.array(z.unknown()).optional().default([]),
   gasLimit: z.string().optional(),
   priority: z.string().optional(),
   description: z.string().optional(),
@@ -29,7 +40,7 @@ export class CdpSmartContract extends BaseNode {
     const raw: unknown = this.nodeDef.data ?? this.nodeDef.config ?? {}
     const nodeConfig: CdpSmartContractConfig = CdpSmartContractConfigSchema.parse(raw)
 
-    const globalState = this.workflowGlobalState.getGlobalState<any>()
+    const globalState = this.workflowGlobalState.getGlobalState<WalletGlobalState>() ?? {}
     const walletInfo = globalState.wallet
 
     if (!walletInfo) {
@@ -48,10 +59,10 @@ export class CdpSmartContract extends BaseNode {
     const network = walletInfo.network || 'base-sepolia'
     const accountName = walletInfo.accountName
 
-    let parsedAbi: any[]
+    let parsedAbi: Abi
     try {
-      parsedAbi = JSON.parse(abi)
-    } catch (e) {
+      parsedAbi = JSON.parse(abi) as Abi
+    } catch {
       throw new Error('Invalid ABI format')
     }
 

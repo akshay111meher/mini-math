@@ -1,7 +1,22 @@
 import { CdpClient } from '@coinbase/cdp-sdk'
 import dotenv from 'dotenv'
+import type { Abi, Chain, Hex } from 'viem'
 
 dotenv.config()
+
+type TokenBalanceNetwork = 'base' | 'base-sepolia' | 'ethereum'
+type FaucetNetwork = 'base-sepolia' | 'ethereum-sepolia'
+type FaucetToken = 'eth' | 'usdc' | 'eurc' | 'cbbtc'
+type TransactionNetwork =
+  | 'base'
+  | 'base-sepolia'
+  | 'ethereum'
+  | 'ethereum-sepolia'
+  | 'avalanche'
+  | 'polygon'
+  | 'optimism'
+  | 'arbitrum'
+type TransferToken = 'eth' | 'usdc' | Hex
 
 export interface CdpAccount {
   name: string
@@ -57,15 +72,15 @@ export interface CdpSignatureParams {
   domain: EIP712Domain
   types: EIP712Types
   primaryType: string
-  message: Record<string, any>
+  message: Record<string, unknown>
 }
 
 export interface CdpSignatureResult {
-  signature: any // CDP SDK returns SignatureResult type
+  signature: unknown // CDP SDK returns SignatureResult type
   address: string
   domain: EIP712Domain
   primaryType: string
-  message: Record<string, any>
+  message: Record<string, unknown>
 }
 
 export class CdpService {
@@ -150,11 +165,11 @@ export class CdpService {
   ): Promise<TokenBalancesResponse> {
     try {
       // Map frontend network names to CDP SDK network names
-      const cdpNetwork = this.mapNetworkToCdp(network)
+      const cdpNetwork = this.mapNetworkToTokenBalanceNetwork(network)
 
       const result = await this.cdp.evm.listTokenBalances({
         address: address as `0x${string}`,
-        network: cdpNetwork as any, // Type assertion for network
+        network: cdpNetwork,
         pageSize,
         pageToken,
       })
@@ -190,12 +205,13 @@ export class CdpService {
   ): Promise<FaucetResponse> {
     try {
       // Map frontend network names to CDP SDK network names
-      const cdpNetwork = this.mapNetworkToCdp(network)
+      const cdpNetwork = this.mapNetworkToFaucetNetwork(network)
+      const faucetToken = this.normalizeFaucetToken(token)
 
       const result = await this.cdp.evm.requestFaucet({
         address: address as `0x${string}`,
-        network: cdpNetwork as any,
-        token: token as any,
+        network: cdpNetwork,
+        token: faucetToken,
       })
 
       return {
@@ -223,7 +239,7 @@ export class CdpService {
       const account = await this.createOrGetAccount(params.accountName)
 
       // Map frontend network names to CDP SDK network names
-      const cdpNetwork = this.mapNetworkToCdp(params.network)
+      const cdpNetwork = this.mapNetworkToTransactionNetwork(params.network)
 
       // Send the transaction using CDP SDK
       const transactionResult = await this.cdp.evm.sendTransaction({
@@ -232,7 +248,7 @@ export class CdpService {
           to: params.to as `0x${string}`,
           value: BigInt(params.value), // Convert string to BigInt
         },
-        network: cdpNetwork as any,
+        network: cdpNetwork,
       })
 
       return {
@@ -267,11 +283,8 @@ export class CdpService {
     }
   }> {
     try {
-      // First, get or create the account
-      const account = await this.createOrGetAccount(params.accountName)
-
       // Map frontend network names to CDP SDK network names
-      const cdpNetwork = this.mapNetworkToCdp(params.network)
+      const cdpNetwork = this.mapNetworkToTransactionNetwork(params.network)
 
       // Import parseEther from viem for amount conversion
       const { parseEther } = await import('viem')
@@ -285,8 +298,8 @@ export class CdpService {
       const transferResult = await cdpAccount.transfer({
         to: params.to as `0x${string}`,
         amount: parseEther(params.amount),
-        token: params.token as any,
-        network: cdpNetwork as any,
+        token: this.normalizeTransferToken(params.token),
+        network: cdpNetwork,
       })
 
       const result: {
@@ -345,9 +358,9 @@ export class CdpService {
     accountName: string
     network: string
     contractAddress: string
-    abi: any[]
+    abi: Abi
     method: string
-    args: any[]
+    args: unknown[]
     gasLimit?: string
     priority?: string
     description?: string
@@ -364,7 +377,7 @@ export class CdpService {
       const account = await this.createOrGetAccount(params.accountName)
 
       // Map frontend network names to CDP SDK network names
-      const cdpNetwork = this.mapNetworkToCdp(params.network)
+      const cdpNetwork = this.mapNetworkToTransactionNetwork(params.network)
 
       // Execute the contract call using CDP SDK with encoded function data
 
@@ -376,7 +389,7 @@ export class CdpService {
         abi: params.abi,
         functionName: params.method,
         args: params.args,
-      })
+      }) as Hex
 
       // Send the transaction with encoded contract data
       const transactionResult = await this.cdp.evm.sendTransaction({
@@ -386,7 +399,7 @@ export class CdpService {
           value: BigInt(0), // No ETH value for contract calls
           data: encodedData as `0x${string}`,
         },
-        network: cdpNetwork as any,
+        network: cdpNetwork,
       })
 
       return {
@@ -468,8 +481,8 @@ export class CdpService {
   }
 
   public async getTransactionStatus(
-    transactionHash: string,
-    network: string,
+    _transactionHash: string,
+    _network: string,
   ): Promise<{ status: string; confirmations?: number; blockNumber?: string }> {
     try {
       // For now, return a basic status
@@ -501,9 +514,9 @@ export class CdpService {
       const { baseSepolia, base, sepolia, mainnet } = await import('viem/chains')
 
       // Map network names to viem chains
-      const chainMap: Record<string, any> = {
+      const chainMap: Record<string, Chain> = {
         'base-sepolia': baseSepolia,
-        base: base,
+        base,
         'ethereum-sepolia': sepolia,
         ethereum: mainnet,
         'eth-sepolia': sepolia,
@@ -567,15 +580,14 @@ export class CdpService {
     }
   }
 
-  // Map frontend network names to CDP SDK network names
-  private mapNetworkToCdp(network: string): string {
-    const networkMap: Record<string, string> = {
+  private mapNetworkToTransactionNetwork(network: string): TransactionNetwork {
+    const networkMap: Record<string, TransactionNetwork> = {
       base: 'base',
       'base-sepolia': 'base-sepolia',
       ethereum: 'ethereum',
       'ethereum-sepolia': 'ethereum-sepolia',
-      eth: 'ethereum', // Legacy support
-      'eth-sepolia': 'ethereum-sepolia', // Legacy support
+      eth: 'ethereum',
+      'eth-sepolia': 'ethereum-sepolia',
       avalanche: 'avalanche',
       polygon: 'polygon',
       optimism: 'optimism',
@@ -592,6 +604,78 @@ export class CdpService {
     }
 
     return mappedNetwork
+  }
+
+  private mapNetworkToTokenBalanceNetwork(network: string): TokenBalanceNetwork {
+    const networkMap: Record<string, TokenBalanceNetwork> = {
+      base: 'base',
+      'base-sepolia': 'base-sepolia',
+      ethereum: 'ethereum',
+    }
+
+    const mappedNetwork = networkMap[network]
+    if (!mappedNetwork) {
+      throw new Error(
+        `Token balances unavailable for ${network}. Supported networks: ${Object.keys(networkMap).join(
+          ', ',
+        )}`,
+      )
+    }
+
+    return mappedNetwork
+  }
+
+  private mapNetworkToFaucetNetwork(network: string): FaucetNetwork {
+    const networkMap: Record<string, FaucetNetwork> = {
+      'base-sepolia': 'base-sepolia',
+      'ethereum-sepolia': 'ethereum-sepolia',
+      'eth-sepolia': 'ethereum-sepolia',
+    }
+
+    const mappedNetwork = networkMap[network]
+    if (!mappedNetwork) {
+      throw new Error(
+        `Faucet not available for ${network}. Supported networks: ${Object.keys(networkMap).join(
+          ', ',
+        )}`,
+      )
+    }
+
+    return mappedNetwork
+  }
+
+  private normalizeFaucetToken(token: string): FaucetToken {
+    const tokenMap: Record<string, FaucetToken> = {
+      eth: 'eth',
+      usdc: 'usdc',
+      eurc: 'eurc',
+      cbbtc: 'cbbtc',
+    }
+
+    const normalized = token?.toLowerCase() ?? 'eth'
+    const mappedToken = tokenMap[normalized]
+    if (!mappedToken) {
+      throw new Error(
+        `Unsupported faucet token: ${token}. Supported tokens: ${Object.keys(tokenMap).join(', ')}`,
+      )
+    }
+
+    return mappedToken
+  }
+
+  private normalizeTransferToken(token: string): TransferToken {
+    const normalized = token?.toLowerCase()
+    if (normalized === 'eth' || normalized === 'usdc') {
+      return normalized
+    }
+
+    if (/^0x[0-9a-fA-F]{40}$/.test(token)) {
+      return token as Hex
+    }
+
+    throw new Error(
+      `Unsupported token "${token}". Provide "eth", "usdc", or a 0x-prefixed contract address.`,
+    )
   }
 }
 

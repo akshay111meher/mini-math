@@ -2,13 +2,36 @@ import { BaseNode, OutputType, NodeDefType, WorkflowGlobalState } from '@mini-ma
 import { makeLogger, Logger } from '@mini-math/logger'
 import { z } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
-import { cdpService } from './utils/cdpService.js'
+import { CdpSignatureParams, EIP712Domain, EIP712Type, cdpService } from './utils/cdpService.js'
+
+interface WalletInfo {
+  walletType: string
+  accountName: string
+  network?: string
+}
+
+interface WalletGlobalState {
+  wallet?: WalletInfo
+}
+
+const EIP712DomainSchema: z.ZodType<EIP712Domain> = z.object({
+  name: z.string(),
+  chainId: z.number().int(),
+  verifyingContract: z.string(),
+  version: z.string().optional(),
+  salt: z.string().optional(),
+})
+
+const EIP712TypeSchema: z.ZodType<EIP712Type> = z.object({
+  name: z.string(),
+  type: z.string(),
+})
 
 const CdpSignNodeConfigSchema = z.object({
-  domain: z.record(z.string(), z.any()),
-  types: z.record(z.string(), z.array(z.object({ name: z.string(), type: z.string() }))),
+  domain: EIP712DomainSchema,
+  types: z.record(z.string(), z.array(EIP712TypeSchema)),
   primaryType: z.string(),
-  message: z.record(z.string(), z.any()),
+  message: z.record(z.string(), z.unknown()),
 })
 
 type CdpSignNodeConfig = z.infer<typeof CdpSignNodeConfigSchema>
@@ -23,21 +46,18 @@ export class CdpSignNode extends BaseNode {
 
   protected async _nodeExecutionLogic(): Promise<OutputType[]> {
     const raw: unknown = this.nodeDef.data ?? this.nodeDef.config ?? {}
-    // We might need to handle stringified JSON inputs if they come from text fields
-    // But assuming they are objects for now or parsed before.
-    // If they are strings, we should parse them.
 
-    // Helper to parse if string
-    const parseIfString = (val: any) => (typeof val === 'string' ? JSON.parse(val) : val)
+    const parseIfString = <T>(val: unknown): T =>
+      typeof val === 'string' ? (JSON.parse(val) as T) : (val as T)
 
-    const config = { ...(raw as any) }
-    if (config.domain) config.domain = parseIfString(config.domain)
-    if (config.types) config.types = parseIfString(config.types)
-    if (config.message) config.message = parseIfString(config.message)
+    const config = { ...(raw as Record<string, unknown>) }
+    if (config.domain) config.domain = parseIfString<EIP712Domain>(config.domain)
+    if (config.types) config.types = parseIfString<Record<string, EIP712Type[]>>(config.types)
+    if (config.message) config.message = parseIfString<Record<string, unknown>>(config.message)
 
     const nodeConfig: CdpSignNodeConfig = CdpSignNodeConfigSchema.parse(config)
 
-    const globalState = this.workflowGlobalState.getGlobalState<any>()
+    const globalState = this.workflowGlobalState.getGlobalState<WalletGlobalState>() ?? {}
     const walletInfo = globalState.wallet
 
     if (!walletInfo) {
@@ -54,13 +74,15 @@ export class CdpSignNode extends BaseNode {
     // cdpService.signTypedData expects domain with specific fields.
     // We assume the input domain matches EIP712Domain interface in cdpService.
 
-    const result = await cdpService.signTypedData({
+    const signParams: CdpSignatureParams = {
       accountName,
-      domain: domain as any,
-      types: types as any,
+      domain,
+      types,
       primaryType,
       message,
-    })
+    }
+
+    const result = await cdpService.signTypedData(signParams)
 
     const out: Extract<OutputType, { type: 'json' }> = {
       id: uuidv4(),
