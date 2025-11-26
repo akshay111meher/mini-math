@@ -2,6 +2,7 @@ import { ExternalInputDataType, ExternalInputIdType } from './input.js'
 import { NodeRefType } from './node.js'
 
 export interface WorkflowGlobalState {
+  workflowId(): string
   getGlobalState<T = unknown>(): T | undefined
   setGlobalState<T>(value: T): void
   updateGlobalState<T = unknown>(updater: (prev: Readonly<T | undefined>) => T): void

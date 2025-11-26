@@ -43,7 +43,7 @@ export class Workflow implements WorkflowGlobalState {
     secrets: Array<BaseSecretType>,
     runtimeDef?: RuntimeDef,
   ) {
-    this.logger = makeLogger(`Workflow ID: ${this.workflowDef.id}`)
+    this.logger = makeLogger('Workflow', { workflowId: this.workflowDef.id })
     this.logger.trace(`started to create workflow. ID: ${this.workflowDef.id}`)
     if (!runtimeDef) {
       this.runtime = {
@@ -82,6 +82,10 @@ export class Workflow implements WorkflowGlobalState {
       return this.secrets.get(secretIdentifier)
     }
     return undefined
+  }
+
+  public workflowId(): string {
+    return this.id()
   }
 
   public getGlobalState<T = unknown>(): T | undefined {

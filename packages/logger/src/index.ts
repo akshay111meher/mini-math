@@ -63,6 +63,9 @@ function wrap(instance: pino.Logger): Logger {
 
 export const logger: Logger = wrap(root)
 
-export function makeLogger(service: string): Logger {
-  return logger.child({ service, env: process.env.NODE_ENV })
+export function makeLogger(
+  service: string,
+  options: { workflowId?: string; nodeId?: string; workerId?: string; workerName?: string } = {},
+): Logger {
+  return logger.child({ service, env: process.env.NODE_ENV, ...options })
 }

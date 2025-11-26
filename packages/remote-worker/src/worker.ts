@@ -24,7 +24,7 @@ export class RemoteWorker {
   ) {
     this.workerClockTime = WORKER_CLOCK_TIME_IN_MS
     this.workerId = v4()
-    this.logger = makeLogger(`Remote Worker: ${name}: ID: ${this.workerId}`)
+    this.logger = makeLogger('Remote Worker', { workerId: this.workerId, workerName: name })
     this.workerName = name
     this.configure()
   }

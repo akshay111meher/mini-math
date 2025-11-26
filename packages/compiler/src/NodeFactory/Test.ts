@@ -6,7 +6,10 @@ export class TestNode extends BaseNode {
   private readonly logger: Logger
   constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState) {
     super(nodeDef, workflowGlobalStateRef)
-    this.logger = makeLogger(`TestNode: ${this.nodeDef.id}`)
+    this.logger = makeLogger('TestNode', {
+      nodeId: this.nodeDef.id,
+      workflowId: this.workflowGlobalState.workflowId(),
+    })
   }
 
   protected async _nodeExecutionLogic(): Promise<OutputType[]> {
