@@ -42,10 +42,10 @@ services:
       - xpack.security.enabled=false # fine for local/dev
       - ES_JAVA_OPTS=-Xms512m -Xmx512m # tune if you have more/less RAM
       # Optional CORS so UIs can talk directly to ES if needed
-      - http.cors.enabled=true
-      - http.cors.allow-origin=*
-      - http.cors.allow-headers=X-Requested-With,Content-Type,Content-Length,Authorization
-      - http.cors.allow-methods=OPTIONS,HEAD,GET,POST,PUT,DELETE
+      # - http.cors.enabled=true
+      # - http.cors.allow-origin=*
+      # - http.cors.allow-headers=X-Requested-With,Content-Type,Content-Length,Authorization
+      # - http.cors.allow-methods=OPTIONS,HEAD,GET,POST,PUT,DELETE
     ports:
       - '9200:9200'
     volumes:

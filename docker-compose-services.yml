@@ -24,6 +24,7 @@ services:
     environment:
       # override / ensure some defaults if not in .env
       NODE_ENV: ${NODE_ENV:-production}
+      ELASTICSEARCH_INDEX: ${ELASTICSEARCH_INDEX:-n9n-server}
 
   n9n-worker-1:
     build:
@@ -36,6 +37,7 @@ services:
     command: ['node', 'apps/n9n/dist/index.js', 'start-worker', '--name', 'worker1']
     environment:
       NODE_ENV: ${NODE_ENV:-production}
+      ELASTICSEARCH_INDEX: ${ELASTICSEARCH_INDEX:-n9n-worker-1}
     depends_on:
       - n9n-server
 
@@ -50,5 +52,6 @@ services:
     command: ['node', 'apps/n9n/dist/index.js', 'start-worker', '--name', 'worker2']
     environment:
       NODE_ENV: ${NODE_ENV:-production}
+      ELASTICSEARCH_INDEX: ${ELASTICSEARCH_INDEX:-n9n-worker-2}
     depends_on:
       - n9n-server
