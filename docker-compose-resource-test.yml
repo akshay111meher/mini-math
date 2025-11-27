@@ -39,17 +39,15 @@ services:
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=true
-        - xpack.security.authc.api_key.enabled=true
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
-      - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD:-yourSuperSecretPassword}
+      - xpack.security.enabled=false # fine for local/dev
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m # tune if you have more/less RAM
       # Optional CORS so UIs can talk directly to ES if needed
       # - http.cors.enabled=true
       # - http.cors.allow-origin=*
       # - http.cors.allow-headers=X-Requested-With,Content-Type,Content-Length,Authorization
       # - http.cors.allow-methods=OPTIONS,HEAD,GET,POST,PUT,DELETE
-    # ports:
-    #   - '9200:9200'
+    ports:
+      - '9200:9200'
     volumes:
       - elastic-data:/usr/share/elasticsearch/data
     restart: unless-stopped
@@ -60,8 +58,6 @@ services:
       - elasticsearch
     environment:
       ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]'
-      ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME:-elastic}
-      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-"yourSuperSecretPassword"}
     ports:
       - '5601:5601'
     volumes:
