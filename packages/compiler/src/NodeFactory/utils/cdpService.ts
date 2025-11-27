@@ -1,7 +1,9 @@
 import { CdpClient } from '@coinbase/cdp-sdk'
 import dotenv from 'dotenv'
 import type { Abi, Chain, Hex } from 'viem'
+import { makeLogger } from '@mini-math/logger'
 
+const logger = makeLogger('cdpServices')
 dotenv.config()
 
 type TokenBalanceNetwork = 'base' | 'base-sepolia' | 'ethereum'
@@ -109,7 +111,7 @@ export class CdpService {
         createdAt: new Date(), // CDP doesn't provide creation date in response
       }
     } catch (error) {
-      console.error('Error creating/getting CDP account:', error)
+      logger.error(`Error creating/getting CDP account: ${error}`)
       throw error
     }
   }
@@ -125,7 +127,7 @@ export class CdpService {
         createdAt: new Date(), // CDP doesn't provide creation date in response
       }
     } catch (error) {
-      console.error('Error getting CDP account:', error)
+      logger.error(`Error getting CDP account: ${error}`)
       return null
     }
   }
@@ -152,7 +154,7 @@ export class CdpService {
       })
       return { privateKey: result }
     } catch (error) {
-      console.error('Error exporting CDP account:', error)
+      logger.error(`Error exporting CDP account: ${error}`)
       throw error
     }
   }
@@ -193,7 +195,7 @@ export class CdpService {
         nextPageToken: result.nextPageToken,
       }
     } catch (error) {
-      console.error('Error getting token balances:', error)
+      logger.error(`Error getting token balances: ${error}`)
       throw error
     }
   }
@@ -221,7 +223,7 @@ export class CdpService {
         address,
       }
     } catch (error) {
-      console.error('Error requesting faucet funds:', error)
+      logger.error(`Error requesting faucet funds: ${error}`)
       throw error
     }
   }
@@ -257,7 +259,7 @@ export class CdpService {
         network: params.network,
       }
     } catch (error) {
-      console.error('Error sending CDP transaction:', error)
+      logger.error(`Error sending CDP transaction: ${error}`)
       throw error
     }
   }
@@ -338,7 +340,7 @@ export class CdpService {
 
       return result
     } catch (error) {
-      console.error('Error performing CDP smart account transfer:', error)
+      logger.error(`Error performing CDP smart account transfer: ${error}`)
       throw error
     }
   }
@@ -411,7 +413,7 @@ export class CdpService {
         blockNumber: undefined, // CDP SDK doesn't return block number in this response
       }
     } catch (error) {
-      console.error('Error invoking CDP smart contract:', error)
+      logger.error(`Error invoking CDP smart contract: ${error}`)
 
       // Extract user-friendly error message from CDP SDK error
       let errorMessage = 'Failed to invoke smart contract'
@@ -473,7 +475,7 @@ export class CdpService {
         message,
       }
     } catch (error) {
-      console.error('Error signing typed data with CDP:', error)
+      logger.error(`Error signing typed data with CDP: ${error}`)
       throw new Error(
         `Failed to sign typed data: ${error instanceof Error ? error.message : 'Unknown error'}`,
       )
@@ -493,7 +495,7 @@ export class CdpService {
         blockNumber: '0',
       }
     } catch (error) {
-      console.error('Error getting transaction status:', error)
+      logger.error(`Error getting transaction status: ${error}`)
       throw error
     }
   }
@@ -547,7 +549,7 @@ export class CdpService {
         confirmations: receipt.status === 'success' ? 1 : 0,
       }
     } catch (error) {
-      console.error('Error waiting for transaction confirmation:', error)
+      logger.error(`Error waiting for transaction confirmation: ${error}`)
       throw error
     }
   }
@@ -565,8 +567,8 @@ export class CdpService {
       const missingVars = requiredEnvVars.filter((varName) => !process.env[varName])
 
       if (missingVars.length > 0) {
-        console.warn(`⚠️  Missing CDP environment variables: ${missingVars.join(', ')}`)
-        console.warn(
+        logger.warn(`⚠️  Missing CDP environment variables: ${missingVars.join(', ')}`)
+        logger.warn(
           'CDP functionality will be limited. Please set the required environment variables.',
         )
         return // Don't throw error, just warn
@@ -574,8 +576,8 @@ export class CdpService {
 
       // Test CDP connection with a simple operation
     } catch (error) {
-      console.error('Failed to initialize CDP service:', error)
-      console.warn('CDP functionality will be disabled due to initialization failure')
+      logger.error(`Failed to initialize CDP service: ${error}`)
+      logger.warn('CDP functionality will be disabled due to initialization failure')
       // Don't throw error, just log it
     }
   }
