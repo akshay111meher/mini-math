@@ -19,11 +19,8 @@ const CodeNodeConfigSchema = z.object({
 type CodeNodeConfig = z.infer<typeof CodeNodeConfigSchema>
 
 export class CodeNode extends BaseNode {
-  private readonly logger: Logger
-
-  constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState) {
-    super(nodeDef, workflowGlobalStateRef)
-    this.logger = makeLogger(`CodeNode: ${this.nodeDef.id}`)
+  constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState, factory: string) {
+    super(nodeDef, workflowGlobalStateRef, factory, 'CodeNode')
   }
 
   protected async _nodeExecutionLogic(): Promise<OutputType[]> {

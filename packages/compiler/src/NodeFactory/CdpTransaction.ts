@@ -27,11 +27,8 @@ const CdpTransactionNodeConfigSchema = z.object({
 type CdpTransactionNodeConfig = z.infer<typeof CdpTransactionNodeConfigSchema>
 
 export class CdpTransactionNode extends BaseNode {
-  private readonly logger: Logger
-
-  constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState) {
-    super(nodeDef, workflowGlobalStateRef)
-    this.logger = makeLogger(`CdpTransactionNode: ${this.nodeDef.id}`)
+  constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState, factory: string) {
+    super(nodeDef, workflowGlobalStateRef, factory, 'CdpTransactionNode')
   }
 
   protected async _nodeExecutionLogic(): Promise<OutputType[]> {

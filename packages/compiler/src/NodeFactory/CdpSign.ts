@@ -37,11 +37,8 @@ const CdpSignNodeConfigSchema = z.object({
 type CdpSignNodeConfig = z.infer<typeof CdpSignNodeConfigSchema>
 
 export class CdpSignNode extends BaseNode {
-  private readonly logger: Logger
-
-  constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState) {
-    super(nodeDef, workflowGlobalStateRef)
-    this.logger = makeLogger(`CdpSignNode: ${this.nodeDef.id}`)
+  constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState, factory: string) {
+    super(nodeDef, workflowGlobalStateRef, factory, 'CdpSignNode')
   }
 
   protected async _nodeExecutionLogic(): Promise<OutputType[]> {

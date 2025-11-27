@@ -46,11 +46,8 @@ interface HttpExecutionResult {
 type HttpNodeConfig = z.infer<typeof HttpNodeConfigSchema>
 
 export class HttpNode extends BaseNode {
-  private readonly logger: Logger
-
-  constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState) {
-    super(nodeDef, workflowGlobalStateRef)
-    this.logger = makeLogger(`HttpNode: ${this.nodeDef.id}`)
+  constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState, factory: string) {
+    super(nodeDef, workflowGlobalStateRef, factory, 'HttpNode')
   }
 
   protected async _nodeExecutionLogic(): Promise<OutputType[]> {

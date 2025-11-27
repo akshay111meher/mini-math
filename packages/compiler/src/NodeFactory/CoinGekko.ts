@@ -4,11 +4,8 @@ import { v4 as uuidv4 } from 'uuid'
 import { z } from 'zod'
 
 export class CoinGekkoNode extends BaseNode {
-  private readonly logger: Logger
-
-  constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState) {
-    super(nodeDef, workflowGlobalStateRef)
-    this.logger = makeLogger(`CoinGekkoNode: ${this.nodeDef.id}`)
+  constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState, factory: string) {
+    super(nodeDef, workflowGlobalStateRef, factory, 'CoinGekkoNode')
   }
 
   protected async _nodeExecutionLogic(): Promise<OutputType[]> {

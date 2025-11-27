@@ -16,11 +16,8 @@ const CdpWalletNodeConfigSchema = z.object({
 type CdpWalletNodeConfig = z.infer<typeof CdpWalletNodeConfigSchema>
 
 export class CdpWalletNode extends BaseNode {
-  private readonly logger: Logger
-
-  constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState) {
-    super(nodeDef, workflowGlobalStateRef)
-    this.logger = makeLogger(`CdpWalletNode: ${this.nodeDef.id}`)
+  constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState, factory: string) {
+    super(nodeDef, workflowGlobalStateRef, factory, 'CdpWalletNode')
   }
 
   private async sha256Hex24(input: string): Promise<string> {

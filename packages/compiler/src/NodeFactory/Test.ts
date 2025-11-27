@@ -3,13 +3,8 @@ import { makeLogger, Logger } from '@mini-math/logger'
 import { v4 as uuidv4 } from 'uuid'
 
 export class TestNode extends BaseNode {
-  private readonly logger: Logger
-  constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState) {
-    super(nodeDef, workflowGlobalStateRef)
-    this.logger = makeLogger('TestNode', {
-      nodeId: this.nodeDef.id,
-      workflowId: this.workflowGlobalState.workflowId(),
-    })
+  constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState, factory: string) {
+    super(nodeDef, workflowGlobalStateRef, factory, 'TestNode')
   }
 
   protected async _nodeExecutionLogic(): Promise<OutputType[]> {

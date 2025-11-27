@@ -39,6 +39,6 @@ export class PrinterNode extends BaseNode {
 
 export class PrinterNodeFactory implements NodeFactoryType {
   make(node: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState): ExecutableNodeBase {
-    return new PrinterNode(node, workflowGlobalStateRef)
+    return new PrinterNode(node, workflowGlobalStateRef, 'PrinterNodeFactory', 'PrinterNode')
   }
 }

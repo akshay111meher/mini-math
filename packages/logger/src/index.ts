@@ -65,7 +65,13 @@ export const logger: Logger = wrap(root)
 
 export function makeLogger(
   service: string,
-  options: { workflowId?: string; nodeId?: string; workerId?: string; workerName?: string } = {},
+  options: {
+    workflowId?: string
+    nodeId?: string
+    workerId?: string
+    workerName?: string
+    nodeName?: string
+  } = {},
 ): Logger {
   return logger.child({ service, env: process.env.NODE_ENV, ...options })
 }

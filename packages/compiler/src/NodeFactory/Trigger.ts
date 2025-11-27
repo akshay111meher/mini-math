@@ -9,10 +9,8 @@ const TriggerConfigSchema = z.object({
 type TriggerConfig = z.infer<typeof TriggerConfigSchema>
 
 export class TriggerNode extends BaseNode {
-  private readonly logger: Logger
-  constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState) {
-    super(nodeDef, workflowGlobalStateRef)
-    this.logger = makeLogger(`TriggerNode: ${this.nodeDef.id}`)
+  constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState, factory: string) {
+    super(nodeDef, workflowGlobalStateRef, factory, 'TriggerNode')
   }
 
   protected async _nodeExecutionLogic(): Promise<OutputType[]> {

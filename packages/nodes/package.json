@@ -35,6 +35,7 @@
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^8.1.0",
+    "@mini-math/logger": "^0.1.0",
     "zod": "^4.1.12"
   }
 }

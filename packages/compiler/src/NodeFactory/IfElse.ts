@@ -132,11 +132,8 @@ const evaluateCondition = (
 }
 
 export class IfElseNode extends BaseNode {
-  private readonly logger: Logger
-
-  constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState) {
-    super(nodeDef, workflowGlobalStateRef)
-    this.logger = makeLogger(`IfElseNode: ${this.nodeDef.id}`)
+  constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState, factory: string) {
+    super(nodeDef, workflowGlobalStateRef, factory, 'IfElseNode')
   }
 
   protected async _nodeExecutionLogic(): Promise<OutputType[]> {

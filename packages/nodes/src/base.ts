@@ -7,15 +7,29 @@ import {
   WorkflowGlobalState,
 } from './types/index.js'
 
+import { Logger, makeLogger } from '@mini-math/logger'
+
 import { ERROR_CODES } from './errors.js'
 
 export abstract class BaseNode implements ExecutableNodeBase {
   protected nodeDef: NodeDefType
   protected workflowGlobalState: WorkflowGlobalState
+  protected nodeName: string
+  protected logger: Logger
 
-  constructor(nodeDef: NodeDefType, workflowGlobalState: WorkflowGlobalState) {
+  constructor(
+    nodeDef: NodeDefType,
+    workflowGlobalState: WorkflowGlobalState,
+    factory: string,
+    nodeName: string,
+  ) {
     this.nodeDef = nodeDef
     this.workflowGlobalState = workflowGlobalState
+    this.nodeName = nodeName
+    this.logger = makeLogger(factory, {
+      nodeId: this.nodeDef.id,
+      nodeName,
+    })
   }
 
   public readInputs(): InputType[] {
