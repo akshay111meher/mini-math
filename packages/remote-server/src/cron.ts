@@ -1,6 +1,7 @@
 import { RuntimeStore } from '@mini-math/runtime'
 import {
   NextLinkedWorkflowType,
+  Workflow,
   WorkflowCoreType,
   WorkflowRefType,
   WorkflowStore,
@@ -9,11 +10,13 @@ import { RequestHandler } from 'express'
 import { CronedWorkflowCoreType } from './swagger/cron.js'
 import { v4 as uuidv4 } from 'uuid'
 import { IQueue } from '@mini-math/queue'
+import { NodeFactoryType } from '@mini-math/compiler'
 
 export function handleCronJob(
   workflowStore: WorkflowStore,
   runtimeStore: RuntimeStore,
   queue: IQueue<WorkflowRefType>,
+  nodeFactory: NodeFactoryType,
 ): RequestHandler {
   return async (req, res) => {
     const cronJobDescription = req.body as CronedWorkflowCoreType
@@ -87,6 +90,16 @@ export function handleCronJob(
         options.nextLinkedWorkflow = nextLinkedWorkflow
       }
 
+      const tempWfRef = Workflow.syntaxCheck(
+        { id: workflowPayload.id, ...workflowPayload.workflowCore, owner: workflowPayload.user },
+        nodeFactory,
+      )
+      if (tempWfRef.hasExternalInput()) {
+        return res.status(400).json({
+          success: false,
+          message: 'cron jobs with external inputs are not supported right now',
+        })
+      }
       if (Object.keys(options).length > 0) {
         await workflowStore.create(
           workflowPayload.id,

@@ -90,7 +90,7 @@ export async function main() {
 
   const cron_load_result = await client.post<{ data: string }>('/cron', {
     workflowCore: demo_workflow,
-    intervalSchedule: { type: 'interval', everyMs: 1000, maxRuns: 10 },
+    intervalSchedule: { type: 'interval', everyMs: 1000, maxRuns: 100 },
   })
   console.log('cron_load_result', cron_load_result.data)
 

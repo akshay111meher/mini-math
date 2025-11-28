@@ -276,7 +276,7 @@ export class Server {
       '/cron',
       requireAuth(),
       validateBody(CronedWorkflowCoreSchema),
-      handleCronJob(this.workflowStore, this.runtimeStore, this.queue),
+      handleCronJob(this.workflowStore, this.runtimeStore, this.queue, this.nodeFactory),
     )
 
     this.app.get('/me', requireAuth(), (req, res) => {
