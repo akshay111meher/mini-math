@@ -1,7 +1,10 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/sh
+# generate-workers.sh
+# Usage: ./generate-workers.sh <start-index> <end-index>
 
-if [ $# -lt 2 ]; then
+set -eu  # POSIX-safe: no pipefail
+
+if [ "$#" -lt 2 ]; then
   echo "Usage: $0 <start-index> <end-index>" >&2
   exit 1
 fi
@@ -9,7 +12,7 @@ fi
 START="$1"
 END="$2"
 
-# Basic sanity checks
+# Basic sanity checks (numeric and > 0)
 if ! [ "$START" -gt 0 ] 2>/dev/null; then
   echo "Error: <start-index> must be a positive integer" >&2
   exit 1
@@ -29,7 +32,8 @@ echo "version: '3.9'"
 echo
 echo "services:"
 
-for i in $(seq "$START" "$END"); do
+i="$START"
+while [ "$i" -le "$END" ]; do
   cat <<EOF
   n9n-worker-$i:
     build:
@@ -45,4 +49,5 @@ for i in $(seq "$START" "$END"); do
       ELASTICSEARCH_INDEX: \${ELASTICSEARCH_INDEX:-n9n-worker-$i}
 
 EOF
+  i=$((i + 1))
 done
