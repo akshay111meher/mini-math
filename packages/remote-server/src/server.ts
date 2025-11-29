@@ -415,7 +415,7 @@ export class Server {
     const wfDef = req.workflow as WorkflowDef // TODO: enfore this by types
 
     Workflow.syntaxCheck(wfDef, this.nodeFactory)
-    this.logger.info(`Loaded workflow: ${wfDef.id}`)
+    this.logger.debug(`Loaded workflow: ${wfDef.id}`)
 
     // TODO: fix this from types perspective
     return res.status(201).json({ id: req.workflowId })

@@ -29,6 +29,7 @@ export abstract class BaseNode implements ExecutableNodeBase {
     this.logger = makeLogger(factory, {
       nodeId: this.nodeDef.id,
       nodeName,
+      workflowId: workflowGlobalState.workflowId(),
     })
   }
 

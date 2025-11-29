@@ -148,7 +148,7 @@ export function createNewWorkflow(workflowStore: WorkflowStore): RequestHandler 
       const def = await workflowStore.create(wfId, req.body, req.user.address)
       req.workflow = def
       res.locals.workflowDef = def
-      logger.info(`Created workflow with id: ${wfId}`)
+      logger.debug(`Created workflow with id: ${wfId}`)
       return next()
     } catch (err) {
       if (err instanceof WorkflowStoreError) {
