@@ -59,6 +59,11 @@ export class RabbitMQQueue<T> implements IQueue<T> {
 
       this.channel = await this.connection.createChannel()
 
+      await this.channel.assertExchange(this.delayedExchange, 'x-delayed-message', {
+        durable: true,
+        arguments: { 'x-delayed-type': 'direct' },
+      })
+
       await this.channel.assertQueue(this.queueName, { durable: true })
       await this.channel.bindQueue(this.queueName, this.delayedExchange, this.queueName)
 
