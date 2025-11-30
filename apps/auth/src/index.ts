@@ -10,13 +10,13 @@ import { main as main8 } from './8_stress.js'
 // This is not right way to test, but comment out tests you don't want
 async function main() {
   await main1()
-  // await main2()
-  // await main3()
-  // await main4()
-  // await main5()
-  // await main6()
-  // await main7()
-  // await main8()
+  await main2()
+  await main3()
+  await main4()
+  await main5()
+  await main6()
+  await main7()
+  await main8()
 
   return 'Done'
 }

@@ -5,7 +5,6 @@ import {
   WorkflowGlobalState,
   ExecutionResult,
 } from '@mini-math/nodes'
-import { makeLogger, Logger } from '@mini-math/logger'
 import { v4 as uuidv4 } from 'uuid'
 import { z } from 'zod'
 import { getGlobalValue } from './utils/globalState.js'

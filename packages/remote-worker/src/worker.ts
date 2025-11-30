@@ -1,6 +1,11 @@
 import { IQueue } from '@mini-math/queue'
 import { RuntimeStore } from '@mini-math/runtime'
-import { Workflow, WorkflowRefType, WorkflowStore } from '@mini-math/workflow'
+import {
+  ExpectingInputForType,
+  Workflow,
+  WorkflowRefType,
+  WorkflowStore,
+} from '@mini-math/workflow'
 import { SecretStore } from '@mini-math/secrets'
 import { Logger, makeLogger } from '@mini-math/logger'
 import { v4 } from 'uuid'
@@ -31,91 +36,126 @@ export class RemoteWorker {
 
   private configure(): void {
     this.queue.onMessage(async (messageId: string, wfId: WorkflowRefType) => {
-      try {
-        this.logger.info(`Received message. MessageId: ${messageId}`)
-        const lock = await this.workflowStore.acquireLock(wfId, this.workerName)
-        if (lock) {
-          this.logger.trace(`Acquired lock on workflow ${wfId} successfully`)
-          const wf = await this.workflowStore.get(wfId)
-          const rt = await this.runtimeStore.get(wfId)
-          wf.inProgress = true
-
-          const secrets = await this.secretStore.listSecrets(wf.owner)
-
-          const workflow = new Workflow(wf, this.nodeFactory, secrets, rt.serialize())
-
-          if (workflow.isFinished()) {
-            const result = await this.workflowStore.update(wfId, {
-              inProgress: false,
-              isInitiated: false,
-            })
-            this.logger.trace(JSON.stringify(result))
-
-            const nextLinkedWorkflow = workflow.nextLinkedWorkflow()
-
-            if (nextLinkedWorkflow) {
-              for (let index = 0; index < nextLinkedWorkflow.length; index++) {
-                const element = nextLinkedWorkflow[index]
-                this.logger.trace(
-                  `Initiating next linked workflow: ${element.id} with executionDelay: ${element.executionDelay}`,
-                )
-                const result = await this.queue.enqueue(element.id, element.executionDelay)
-                this.logger.trace(result)
-              }
-            }
-
-            await this.queue.ack(messageId)
-            return
-          }
-
-          const info = await workflow.clock()
-          this.logger.trace(`Clocked workflow: ${workflow.id()}`)
-          this.logger.trace(JSON.stringify(info))
-
-          if (info.status == 'waiting_for_input') {
-            this.logger.trace(
-              `Workflow ID: ${wfId} has been paused, as it is expecting input: ${JSON.stringify(info)}`,
-            )
-            const result = await this.workflowStore.update(workflow.id(), {
-              expectingInputFor: info.expectingInputFor,
-            })
-            this.logger.trace(JSON.stringify(result))
-
-            const result2 = await Promise.all([
-              this.workflowStore.releaseLock(wfId),
-              this.queue.ack(messageId),
-            ])
-            this.logger.trace(JSON.stringify(result2))
-            return
-          }
-
-          this.logger.trace(`Clock Status of workflow: ${info.status}`)
-
-          const [wfNext, rtNext] = workflow.serialize()
-
-          const result = await Promise.all([
-            this.workflowStore.update(workflow.id(), wfNext),
-            this.runtimeStore.update(workflow.id(), rtNext),
-          ])
-          this.logger.trace(JSON.stringify(result))
-
-          await this.workflowStore.releaseLock(wfId)
-          this.logger.trace(`Released lock on workflow ${wfId} successfully`)
-
-          const result2 = await Promise.all([
-            this.queue.enqueue(wfId, this.workerClockTime),
-            this.queue.ack(messageId),
-          ])
-          this.logger.trace(JSON.stringify(result2))
-          return
-        } else {
-          await this.queue.nack(messageId, true)
-        }
-      } catch (err) {
-        await this.queue.nack(messageId, true)
-        this.logger.error(`Worker error: ${(err as Error).message}`)
-      }
+      await this.handleMessage(messageId, wfId)
     })
+  }
+
+  private async handleMessage(messageId: string, wfId: WorkflowRefType): Promise<void> {
+    try {
+      this.logger.info(`Received message. MessageId: ${messageId}, wfId: ${wfId}`)
+
+      const lock = await this.workflowStore.acquireLock(wfId, this.workerName)
+      if (!lock) {
+        this.logger.trace(`Could not acquire lock on workflow ${wfId}, nacking + requeue`)
+        await this.queue.nack(messageId, true)
+        return
+      }
+
+      this.logger.trace(`Acquired lock on workflow ${wfId} successfully`)
+
+      const wf = await this.workflowStore.get(wfId)
+      const rt = await this.runtimeStore.get(wfId)
+      wf.inProgress = true
+
+      const secrets = await this.secretStore.listSecrets(wf.owner)
+      const workflow = new Workflow(wf, this.nodeFactory, secrets, rt.serialize())
+
+      if (workflow.isFinished()) {
+        await this.handleFinishedWorkflow(workflow, wfId, messageId)
+        return
+      }
+
+      const info = await workflow.clock()
+      this.logger.trace(`Clocked workflow: ${workflow.id()}`)
+      this.logger.trace(JSON.stringify(info))
+
+      if (info.status === 'waiting_for_input') {
+        await this.handleWaitingForInput(workflow, wfId, messageId, info)
+        return
+      }
+
+      await this.handleInProgressWorkflow(workflow, wfId, messageId)
+    } catch (error) {
+      await this.queue.nack(messageId, true)
+      this.logger.error(`Worker error: ${JSON.stringify(error)}`)
+    }
+  }
+
+  private async handleInProgressWorkflow(
+    workflow: Workflow,
+    wfId: WorkflowRefType,
+    messageId: string,
+  ): Promise<void> {
+    this.logger.trace(`Clock Status of workflow: continuing`)
+
+    const [wfNext, rtNext] = workflow.serialize()
+
+    const updateResult = await Promise.all([
+      this.workflowStore.update(workflow.id(), wfNext),
+      this.runtimeStore.update(workflow.id(), rtNext),
+    ])
+    this.logger.trace(JSON.stringify(updateResult))
+
+    await this.workflowStore.releaseLock(wfId)
+    this.logger.trace(`Released lock on workflow ${wfId} successfully`)
+
+    const result2 = await Promise.all([
+      this.queue.enqueue(wfId, this.workerClockTime),
+      this.queue.ack(messageId),
+    ])
+    this.logger.trace(JSON.stringify(result2))
+  }
+
+  private async handleWaitingForInput(
+    workflow: Workflow,
+    wfId: WorkflowRefType,
+    messageId: string,
+    info: { status: string; expectingInputFor: ExpectingInputForType },
+  ): Promise<void> {
+    this.logger.trace(
+      `Workflow ID: ${wfId} has been paused, expecting input: ${JSON.stringify(info)}`,
+    )
+
+    const updateResult = await this.workflowStore.update(workflow.id(), {
+      expectingInputFor: info.expectingInputFor,
+    })
+    this.logger.trace(JSON.stringify(updateResult))
+
+    const result2 = await Promise.all([
+      this.workflowStore.releaseLock(wfId),
+      this.queue.ack(messageId),
+    ])
+    this.logger.trace(JSON.stringify(result2))
+  }
+
+  private async handleFinishedWorkflow(
+    workflow: Workflow,
+    wfId: WorkflowRefType,
+    messageId: string,
+  ): Promise<void> {
+    this.logger.trace(`Workflow ${wfId} is finished, marking as complete`)
+
+    const result = await this.workflowStore.update(wfId, {
+      inProgress: false,
+      isInitiated: false,
+      lock: undefined,
+    })
+    this.logger.trace(JSON.stringify(result))
+
+    const nextLinkedWorkflow = workflow.nextLinkedWorkflow()
+
+    if (nextLinkedWorkflow) {
+      for (let index = 0; index < nextLinkedWorkflow.length; index++) {
+        const element = nextLinkedWorkflow[index]
+        this.logger.trace(
+          `Initiating next linked workflow: ${element.id} with executionDelay: ${element.executionDelay}`,
+        )
+        const enqResult = await this.queue.enqueue(element.id, element.executionDelay)
+        this.logger.trace(enqResult)
+      }
+    }
+
+    await this.queue.ack(messageId)
   }
 
   public async start(): Promise<void> {

@@ -1,5 +1,4 @@
 import { BaseNode, OutputType, NodeDefType, WorkflowGlobalState } from '@mini-math/nodes'
-import { makeLogger, Logger } from '@mini-math/logger'
 import { z } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
 import { CdpSignatureParams, EIP712Domain, EIP712Type, cdpService } from './utils/cdpService.js'

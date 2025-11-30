@@ -88,7 +88,7 @@ export async function main() {
   const workflow_run = await client.post('/run', { ...demo_workflow, owner: wallet.address })
   console.log('workflow_run', workflow_run.data)
 
-  for (let index = 0; index < 10; index++) {
+  for (let index = 0; index < 100; index++) {
     const cron_load_result = await client.post<{ data: string }>('/cron', {
       workflowCore: demo_workflow,
       intervalSchedule: { type: 'interval', everyMs: 1, maxRuns: 100 },

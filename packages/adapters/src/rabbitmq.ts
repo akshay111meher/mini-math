@@ -7,7 +7,7 @@ export class RabbitMQQueue<T> implements IQueue<T> {
   private connection: amqp.ChannelModel | undefined
   private channel: amqp.Channel | undefined
   private queueName: string
-  private delayQueueName: string
+  private delayQueueIndex: string
   private connectionUrl: string
   private inFlight: Map<string, amqp.Message> = new Map()
   private messageCallback?: (messageId: string, item: T) => Promise<void>
@@ -16,14 +16,22 @@ export class RabbitMQQueue<T> implements IQueue<T> {
   private explicitClose = false
   private logger: Logger
 
+  private delayQueueBuckets: number = 10
+  private delayedQueueIndexes = new Map<number, string>()
+
   private initialized = false
   private initPromise: Promise<void> | null = null
 
   constructor(connectionUrl: string) {
     this.connectionUrl = connectionUrl
     this.queueName = 'workflow_queue'
-    this.delayQueueName = 'delay_queue'
+    this.delayQueueIndex = 'delay_queue'
     this.logger = makeLogger('RabbitMq')
+
+    for (let index = 1; index <= this.delayQueueBuckets; index++) {
+      const delayQueueIndex = this.delayQueueIndex + '' + index
+      this.delayedQueueIndexes.set(index, delayQueueIndex)
+    }
   }
 
   private async ensureInitialized(): Promise<void> {
@@ -60,20 +68,23 @@ export class RabbitMQQueue<T> implements IQueue<T> {
 
       this.channel = await this.connection.createChannel()
 
-      await this.channel.assertQueue(this.delayQueueName, {
-        durable: true,
-        arguments: {
-          'x-dead-letter-exchange': '', // use default exchange
-          'x-dead-letter-routing-key': this.queueName, // send to this queue after TTL
-        },
-      })
+      for (const [index, value] of this.delayedQueueIndexes) {
+        this.logger.info(`Setting up ${index}-th queue`)
+        await this.channel.assertQueue(value, {
+          durable: true,
+          arguments: {
+            'x-dead-letter-exchange': '', // use default exchange
+            'x-dead-letter-routing-key': this.queueName, // send to this queue after TTL
+          },
+        })
+        this.logger.info(`[RabbitMQ] Connected '${value}' asserted.`)
+      }
 
       await this.channel.assertQueue(this.queueName, { durable: true })
 
       await this.channel.prefetch(1) // Process one message at a time per consumer
 
       this.logger.info(`[RabbitMQ] Connected '${this.queueName}' asserted.`)
-      this.logger.info(`[RabbitMQ] Connected '${this.delayQueueName}' asserted.`)
 
       if (this.messageCallback) {
         await this.setupConsumer()
@@ -121,7 +132,7 @@ export class RabbitMQQueue<T> implements IQueue<T> {
       })
     } else {
       // in this case, put in dead-queue
-      await this.channel.sendToQueue(this.delayQueueName, buffer, {
+      await this.channel.sendToQueue(this.calcQueueToInsertTo(delayMs), buffer, {
         persistent: true,
         messageId,
         expiration: delayMs,
@@ -129,6 +140,22 @@ export class RabbitMQQueue<T> implements IQueue<T> {
     }
 
     return messageId
+  }
+
+  private calcQueueToInsertTo(delayMs: number): string {
+    const q = this.delayedQueueIndexes.get(this.calcQueueIndex(delayMs))
+    if (q) {
+      return q
+    } else {
+      return this.queueName
+    }
+  }
+  private calcQueueIndex(delayMs: number): number {
+    if (delayMs <= 0) {
+      return 1
+    }
+    const bucket = Math.floor(Math.log10(delayMs)) + 1
+    return bucket <= this.delayQueueBuckets ? bucket : this.delayQueueBuckets
   }
 
   onMessage(callback: (messageId: string, item: T) => Promise<void>): void {
