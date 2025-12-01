@@ -41,7 +41,7 @@ export async function main() {
   const wallet = new Wallet(process.env.PLATFORM_OWNER_PRIVATE_KEY!)
 
   const jar = new CookieJar()
-  const client = wrapper(axios.create({ baseURL: `http://${DOMAIN}`, jar, withCredentials: true }))
+  const client = wrapper(axios.create({ baseURL: `https://${DOMAIN}`, jar, withCredentials: true }))
 
   const {
     data: { nonce },
@@ -50,13 +50,13 @@ export async function main() {
   const msg = new SiweMessage({
     domain: SIWE_DOMAIN,
     address: wallet.address,
-    uri: `http://${SIWE_DOMAIN}`,
+    uri: `https://${SIWE_DOMAIN}`,
     version: '1',
     chainId: CHAIN_ID,
     nonce,
   })
 
-  const cookies1 = await jar.getCookies(`http://${DOMAIN}`) // from tough-cookie
+  const cookies1 = await jar.getCookies(`https://${DOMAIN}`) // from tough-cookie
   console.log(cookies1)
 
   const prepared = msg.prepareMessage() // canonical EIP-4361 string

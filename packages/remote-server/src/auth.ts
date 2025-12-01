@@ -51,7 +51,7 @@ export function verifySiwe(REQUESTING_DOMAIN: string) {
 
     // Check domain binding (prevents phishing)
     if (!siwe.domain || siwe.domain !== REQUESTING_DOMAIN) {
-      logger.warn(`APP_DOMAIN: ${REQUESTING_DOMAIN}`)
+      logger.warn(`REQUESTING_DOMAIN: ${REQUESTING_DOMAIN}`)
       logger.warn(`siwe.domain: ${siwe.domain}`)
       // return res.status(400).json({ error: 'Domain mismatch' })
     }

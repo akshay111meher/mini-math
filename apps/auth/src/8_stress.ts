@@ -41,7 +41,7 @@ export async function main() {
   const wallet = new Wallet(process.env.PLATFORM_OWNER_PRIVATE_KEY!)
 
   const jar = new CookieJar()
-  const client = wrapper(axios.create({ baseURL: `http://${DOMAIN}`, jar, withCredentials: true }))
+  const client = wrapper(axios.create({ baseURL: `https://${DOMAIN}`, jar, withCredentials: true }))
 
   const {
     data: { nonce },
@@ -50,13 +50,13 @@ export async function main() {
   const msg = new SiweMessage({
     domain: SIWE_DOMAIN,
     address: wallet.address,
-    uri: `http://${SIWE_DOMAIN}`,
+    uri: `https://${SIWE_DOMAIN}`,
     version: '1',
     chainId: CHAIN_ID,
     nonce,
   })
 
-  const cookies1 = await jar.getCookies(`http://${DOMAIN}`) // from tough-cookie
+  const cookies1 = await jar.getCookies(`https://${DOMAIN}`) // from tough-cookie
   console.log(cookies1)
 
   const prepared = msg.prepareMessage() // canonical EIP-4361 string
@@ -91,7 +91,7 @@ export async function main() {
   for (let index = 0; index < 10; index++) {
     const cron_load_result = await client.post<{ data: string }>('/cron', {
       workflowCore: demo_workflow,
-      intervalSchedule: { type: 'interval', everyMs: 100, maxRuns: 100 },
+      intervalSchedule: { type: 'interval', everyMs: 100, maxRuns: 10 },
     })
     console.log('cron_load_result', cron_load_result.data)
 
