@@ -1,7 +1,9 @@
 import { RouteConfig } from '@asteasolutions/zod-to-openapi'
 import { WorkflowCore } from '@mini-math/workflow'
 import { z } from 'zod'
-import { PROD_READY, StandardResponse } from './validate.js'
+import { StandardResponse } from './validate.js'
+
+export const CRON = 'Cron Jobs'
 
 export const IntervalScheduleSchema = z
   .object({
@@ -27,7 +29,7 @@ export type CronedWorkflowCoreType = z.infer<typeof CronedWorkflowCoreSchema>
 export const cron: RouteConfig = {
   method: 'post',
   path: '/cron',
-  tags: [PROD_READY],
+  tags: [CRON],
   summary: 'Load a job with cron like execution',
   request: {
     body: {

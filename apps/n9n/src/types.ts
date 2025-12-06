@@ -33,6 +33,7 @@ export class App {
     DOMAIN: string,
     SIWE_DOMAIN: string,
     allowedOrigins: string[],
+    isProd: boolean,
   ): Promise<void> {
     const server = new Server(
       workflowStore,
@@ -46,7 +47,12 @@ export class App {
       SIWE_DOMAIN,
       'super-long-session-secret',
       allowedOrigins,
-      { httpOnly: true, sameSite: 'none', secure: true, maxAge: 1000 * 60 * 60 * 24 },
+      {
+        httpOnly: true,
+        sameSite: isProd ? 'none' : 'lax',
+        secure: isProd,
+        maxAge: 1000 * 60 * 60 * 24,
+      },
     )
 
     return server.start()

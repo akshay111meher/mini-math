@@ -15,21 +15,25 @@ program
   .requiredOption('--domain <domain>', 'Domain to bind')
   .requiredOption('--siwe <siwe>', 'Siwe Domain to bind')
   .requiredOption('--allowed-origins <allowedOrigins>', 'Siwe Domain to bind')
-  .action(async (opts: { domain: string; siwe: string; allowedOrigins: string }) => {
-    const { domain, siwe, allowedOrigins } = opts
+  .requiredOption('--node-env <nodeEnv>', 'Production/Dev')
+  .action(
+    async (opts: { domain: string; siwe: string; allowedOrigins: string; nodeEnv: string }) => {
+      const { domain, siwe, allowedOrigins, nodeEnv } = opts
 
-    // TODO: your real logic here
-    console.log(`Starting server on domain: ${domain}`)
+      // TODO: your real logic here
+      console.log(`Starting server on domain: ${domain}`)
 
-    await App.start_server(
-      domain,
-      siwe,
-      allowedOrigins
-        .split(',')
-        .map((origin) => origin.trim())
-        .filter(Boolean),
-    )
-  })
+      await App.start_server(
+        domain,
+        siwe,
+        allowedOrigins
+          .split(',')
+          .map((origin) => origin.trim())
+          .filter(Boolean),
+        nodeEnv.trim().toLowerCase() == 'production' || nodeEnv.trim().toLowerCase() == 'prod',
+      )
+    },
+  )
 
 // app start-worker --name worker-1
 program
