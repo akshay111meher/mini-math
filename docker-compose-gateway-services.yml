@@ -4,7 +4,7 @@ services:
   n9n-server:
     build:
       context: .
-      dockerfile: ./Dockerfile
+      dockerfile: ./Dockerfile.cached
     container_name: n9n-server
     restart: unless-stopped
     env_file:

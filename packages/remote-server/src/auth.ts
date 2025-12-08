@@ -68,8 +68,8 @@ export function verifySiwe(REQUESTING_DOMAIN: string) {
 
     // Nonce must match session
     if (!req.session.nonce || siwe.nonce !== req.session.nonce) {
-      logger.trace(`req.session.nonce: ${req?.session?.nonce}`)
-      logger.trace(`siwe.nonce: ${siwe?.nonce}`)
+      logger.warn(`req.session.nonce: ${req?.session?.nonce}`)
+      logger.warn(`siwe.nonce: ${siwe?.nonce}`)
       return res.status(401).json({ error: 'Bad or missing nonce' })
     }
 
