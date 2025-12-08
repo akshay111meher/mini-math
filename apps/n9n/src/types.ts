@@ -54,7 +54,7 @@ export class App {
       'super-long-session-secret',
       allowedOrigins,
       {
-        httpOnly: !isProd,
+        httpOnly: isProd,
         sameSite: isProd ? 'none' : 'lax',
         secure: isProd,
         maxAge: 1000 * 60 * 60 * 24,
