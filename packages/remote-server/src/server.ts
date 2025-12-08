@@ -97,6 +97,7 @@ export class Server {
     private readonly session_secret: string,
     private allowedOrigins: string[],
     private cookieOptions: session.CookieOptions,
+    private trustProxy: boolean,
   ) {
     this.configureMiddleware()
     this.configureRoutes()
@@ -171,6 +172,7 @@ export class Server {
         store,
         resave: false,
         saveUninitialized: false,
+        proxy: this.trustProxy,
         cookie: this.cookieOptions,
       }),
     )

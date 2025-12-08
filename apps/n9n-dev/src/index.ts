@@ -71,6 +71,7 @@ const server = new Server(
   'super-long-session-secret',
   ['http://localhost:3000'],
   { httpOnly: true, sameSite: 'lax', secure: false, maxAge: 1000 * 60 * 60 * 24 },
+  false,
 )
 
 async function main() {
