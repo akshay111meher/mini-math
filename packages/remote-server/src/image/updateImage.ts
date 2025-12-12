@@ -1,7 +1,6 @@
 import type { RequestHandler } from 'express'
 import { ImageStore } from '@mini-math/images'
 import { StoreWorkflowImageSchemaType } from 'src/swagger/image.js'
-import { UserStore } from '@mini-math/rbac'
 
 export function handleUpdateImage(imageStore: ImageStore): RequestHandler {
   return async (req, res, next) => {

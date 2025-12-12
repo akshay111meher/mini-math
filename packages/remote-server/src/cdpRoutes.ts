@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { requireAuth } from './middlewares/index.js'
-import { cdpService } from './cdp.js'
+import { cdpService, parseNetwork } from './cdp.js'
 
 export function createCdpRoutes(): Router {
   const router = Router()
@@ -34,7 +34,7 @@ export function createCdpRoutes(): Router {
         return res.status(400).json({ success: false, error: 'address and network are required' })
       const balances = await cdpService.listTokenBalances(
         address as string,
-        network as string,
+        parseNetwork(network),
         pageSize ? Number(pageSize) : undefined,
         pageToken as string | undefined,
       )
@@ -67,9 +67,7 @@ export function createCdpRoutes(): Router {
     try {
       const { accountName, address } = req.body as { accountName?: string; address?: string }
       if (!accountName && !address)
-        return res
-          .status(400)
-          .json({ success: false, error: 'accountName or address is required' })
+        return res.status(400).json({ success: false, error: 'accountName or address is required' })
       const result = await cdpService.exportAccount({ accountName, address })
       res.json({ success: true, data: result })
     } catch (err) {
@@ -79,4 +77,3 @@ export function createCdpRoutes(): Router {
 
   return router
 }
-

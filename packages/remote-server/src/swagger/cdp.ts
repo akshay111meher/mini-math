@@ -221,4 +221,3 @@ export const exportAccount: RouteConfig = {
   },
   security: [{ cookieAuth: [] }],
 }
-

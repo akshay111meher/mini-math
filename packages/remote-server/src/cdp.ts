@@ -31,6 +31,31 @@ interface FaucetResponse {
   address: string
 }
 
+const ALLOWED_NETWORKS = ['base-sepolia', 'base', 'ethereum'] as const
+type Network = (typeof ALLOWED_NETWORKS)[number]
+
+export function parseNetwork(q: unknown): Network {
+  if (typeof q !== 'string') throw new Error('invalid network (q)') // rejects ParsedQs / arrays
+  if ((ALLOWED_NETWORKS as readonly string[]).includes(q)) return q as Network
+  throw new Error('unsupported network')
+}
+
+const ALLOWED_FAUCET = ['base-sepolia', 'ethereum-sepolia'] as const
+type FAUCET = (typeof ALLOWED_FAUCET)[number]
+export function parseFaucet(q: unknown): FAUCET {
+  if (typeof q !== 'string') throw new Error('invalid faucet (q)') // rejects ParsedQs / arrays
+  if ((ALLOWED_FAUCET as readonly string[]).includes(q)) return q as FAUCET
+  throw new Error('unsupported faucet')
+}
+
+const ALLOWED_FAUCET_TOKEN = ['eth', 'usdc', 'eurc', 'cbbtc'] as const
+type FAUCET_TOKEN = (typeof ALLOWED_FAUCET_TOKEN)[number]
+export function parseFaucetToken(q: unknown): FAUCET_TOKEN {
+  if (typeof q !== 'string') throw new Error('invalid faucet token (q)') // rejects ParsedQs / arrays
+  if ((ALLOWED_FAUCET_TOKEN as readonly string[]).includes(q)) return q as FAUCET_TOKEN
+  throw new Error('unsupported faucet token')
+}
+
 // Simple service wrapper for CDP operations used by the account page
 class CdpService {
   private client: CdpClient
@@ -62,7 +87,10 @@ class CdpService {
     }
   }
 
-  async exportAccount(params: { accountName?: string; address?: string }): Promise<{ privateKey: string }> {
+  async exportAccount(params: {
+    accountName?: string
+    address?: string
+  }): Promise<{ privateKey: string }> {
     if (!params.accountName && !params.address) {
       throw new Error('Either accountName or address is required')
     }
@@ -77,11 +105,11 @@ class CdpService {
     address: string,
     network: string,
     pageSize?: number,
-    pageToken?: string
+    pageToken?: string,
   ): Promise<TokenBalancesResponse> {
     const result = await this.client.evm.listTokenBalances({
       address: address as `0x${string}`,
-      network: network as any,
+      network: parseNetwork(network),
       pageSize,
       pageToken,
     })
@@ -105,8 +133,8 @@ class CdpService {
   async requestFaucet(address: string, network: string, token: string): Promise<FaucetResponse> {
     const result = await this.client.evm.requestFaucet({
       address: address as `0x${string}`,
-      network: network as any,
-      token: token as any,
+      network: parseFaucet(network),
+      token: parseFaucetToken(token),
     })
     return {
       transactionHash: result.transactionHash,
@@ -118,4 +146,3 @@ class CdpService {
 }
 
 export const cdpService = new CdpService()
-
