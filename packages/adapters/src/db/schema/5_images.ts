@@ -1,6 +1,4 @@
-import { pgTable, text, jsonb, index, primaryKey, foreignKey } from 'drizzle-orm/pg-core'
-// don't use .js/.ts extension here
-import { users } from './0_users'
+import { pgTable, text, jsonb, index, primaryKey } from 'drizzle-orm/pg-core'
 import type { WorkflowCoreType } from '@mini-math/workflow'
 
 export const workflowImages = pgTable(

@@ -8,7 +8,7 @@ export function ensureMaxSecretsCount(secretStore: SecretStore): RequestHandler 
     const userId = req.user.address
     const secrets = await secretStore.listSecrets(userId)
     if (secrets.length >= MAX_NUMBER_OF_SECRETS) {
-      return res.status(420).json({
+      return res.status(429).json({
         success: false,
         message: `User: ${req.user.address} can't store more than ${MAX_NUMBER_OF_SECRETS}. Delete some secrets`,
       })

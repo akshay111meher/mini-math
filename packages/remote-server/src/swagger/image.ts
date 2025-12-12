@@ -1,5 +1,5 @@
 import { RouteConfig } from '@asteasolutions/zod-to-openapi'
-import { StandardResponse } from './validate.js'
+import { StandardResponse, ValidationError } from './validate.js'
 import { z } from 'zod'
 import { WorkflowCore } from '@mini-math/workflow'
 import { ListOptionsSchema } from '@mini-math/utils'
@@ -26,12 +26,24 @@ export const storeImage: RouteConfig = {
     },
   },
   responses: {
-    200: {
+    201: {
       description: 'When Image is stored successfully',
       content: { 'application/json': { schema: StandardResponse } },
     },
+    401: {
+      description: 'Unauthorized',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+    400: {
+      description: 'Validation Error',
+      content: { 'application/json': { schema: ValidationError } },
+    },
     404: {
       description: 'When Image is not stored',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+    409: {
+      description: 'Image name already exists',
       content: { 'application/json': { schema: StandardResponse } },
     },
   },
@@ -55,9 +67,17 @@ export const updateImage: RouteConfig = {
       description: 'When Image is updated successfully',
       content: { 'application/json': { schema: StandardResponse } },
     },
-    400: {
+    403: {
       description: 'When Image is not updated',
       content: { 'application/json': { schema: StandardResponse } },
+    },
+    401: {
+      description: 'Unauthorized',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+    400: {
+      description: 'Validation Error',
+      content: { 'application/json': { schema: ValidationError } },
     },
   },
   security: [{ cookieAuth: [] }],
@@ -80,6 +100,14 @@ export const existImage: RouteConfig = {
       description: 'Status of the image',
       content: { 'application/json': { schema: StandardResponse } },
     },
+    401: {
+      description: 'Unauthorized',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+    400: {
+      description: 'Validation Error',
+      content: { 'application/json': { schema: ValidationError } },
+    },
   },
   security: [{ cookieAuth: [] }],
 }
@@ -97,9 +125,23 @@ export const deleteImage: RouteConfig = {
     },
   },
   responses: {
-    200: {
-      description: 'Status of the image',
+    202: {
+      description: 'When image is deleted properly',
+      content: {
+        'application/json': {
+          schema: StandardResponse.extend({
+            data: z.string().openapi('Name of workflow that has been deleted'),
+          }),
+        },
+      },
+    },
+    401: {
+      description: 'Unauthorized',
       content: { 'application/json': { schema: StandardResponse } },
+    },
+    400: {
+      description: 'Validation Error',
+      content: { 'application/json': { schema: ValidationError } },
     },
   },
   security: [{ cookieAuth: [] }],
@@ -134,6 +176,10 @@ export const countImages: RouteConfig = {
   responses: {
     200: {
       description: 'Status of the image',
+      content: { 'application/json': { schema: StandardResponse.extend({ data: z.number() }) } },
+    },
+    401: {
+      description: 'Unauthorized',
       content: { 'application/json': { schema: StandardResponse } },
     },
   },

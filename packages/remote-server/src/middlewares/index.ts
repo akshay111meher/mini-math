@@ -4,6 +4,7 @@ export * from './workflow.js'
 export * from './auth.js'
 export * from './role.js'
 export * from './image.js'
+export * from './cdp.js'
 
 import type { RequestHandler } from 'express'
 import { v4 as uuidv4 } from 'uuid'

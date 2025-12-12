@@ -1,6 +1,14 @@
 import { WorkflowCore } from '@mini-math/workflow'
 import { z } from 'zod'
 import type { RouteConfig } from '@asteasolutions/zod-to-openapi'
+import { ZodIssueCode } from 'zod/v3'
+
+export const IssueSchema = z.object({
+  path: z.string(),
+  message: z.string(),
+  code: z.enum(ZodIssueCode),
+})
+export type IssueSchemaType = z.infer<typeof IssueSchema>
 
 export const VALIDATE = 'Validate'
 export const ONLY_DEV = 'Only Developer Role'
@@ -14,6 +22,12 @@ export const StandardResponse = z
     issues: z.any().optional(),
   })
   .openapi('StandardResponse')
+
+export const ValidationError = z.object({
+  status: z.literal(false),
+  error: z.literal('ValidationError'),
+  issues: IssueSchema,
+})
 
 export const ID = z
   .object({
@@ -40,7 +54,7 @@ export const validate: RouteConfig = {
     },
     400: {
       description: 'Validation error',
-      content: { 'application/json': { schema: StandardResponse } },
+      content: { 'application/json': { schema: ValidationError } },
     },
   },
 }

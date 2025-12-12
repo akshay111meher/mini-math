@@ -18,10 +18,20 @@ export const run: RouteConfig = {
   responses: {
     200: {
       description: 'Workflow is valid',
-      content: { 'application/json': { schema: WorkflowSchema } },
+      content: {
+        'application/json': { schema: StandardResponse.extend({ data: WorkflowSchema }) },
+      },
     },
     400: {
       description: 'Validation error',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+    401: {
+      description: 'Unauthorized',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+    403: {
+      description: 'When user does not have sufficient priviledges / role',
       content: { 'application/json': { schema: StandardResponse } },
     },
     404: {

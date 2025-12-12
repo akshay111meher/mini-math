@@ -1,7 +1,8 @@
 import { Pool } from 'pg'
-import { ListOptions, ListResult, Runtime, RuntimeDef, RuntimeStore } from '@mini-math/runtime'
+import { Runtime, RuntimeDef, RuntimeStore } from '@mini-math/runtime'
 import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { eq, sql } from 'drizzle-orm'
+import { ListOptions, ListResult } from '@mini-math/utils'
 
 import * as schema from './db/schema/3_runtime.js'
 import { runtimes } from './db/schema/3_runtime.js'
@@ -203,7 +204,7 @@ export class PostgresRuntimeStore extends RuntimeStore {
     }
   }
 
-  protected async _list(options?: ListOptions): Promise<ListResult> {
+  protected async _list(options?: ListOptions): Promise<ListResult<RuntimeDef>> {
     try {
       const limit = options?.limit ?? 50
       const offset = options?.cursor ? Number(options.cursor) : 0
@@ -225,7 +226,7 @@ export class PostgresRuntimeStore extends RuntimeStore {
       const nextOffset = offset + limit
       const nextCursor = nextOffset < total ? String(nextOffset) : undefined
 
-      const result: ListResult = {
+      const result: ListResult<RuntimeDef> = {
         items,
         nextCursor,
       }

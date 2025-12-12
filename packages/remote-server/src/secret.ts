@@ -41,7 +41,7 @@ export function handleFetchSecret(secretStore: SecretStore): RequestHandler {
     const result = await secretStore.getSecret(userId, body.secretIdentifier)
 
     if (result) {
-      return res.status(200).json(result)
+      return res.status(200).json({ status: true, data: result })
     } else {
       return res.status(404).json({
         success: false,
@@ -61,7 +61,7 @@ export function handleFetchAllSecretIdentifiers(secretStore: SecretStore): Reque
         message: 'secret not found',
       })
     } else {
-      return res.status(200).json(result.map((a) => a.secretIdentifier))
+      return res.status(200).json({ status: true, data: result.map((a) => a.secretIdentifier) })
     }
   }
 }

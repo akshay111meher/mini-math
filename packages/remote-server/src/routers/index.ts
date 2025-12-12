@@ -1,0 +1,7 @@
+export * as CdpRouter from './cdp/index.js'
+export * as AuthRouter from './auth/index.js'
+export * as DevRouter from './dev.js'
+export * as WorkflowRouter from './workflow.js'
+export * as RbacRouter from './rbac.js'
+export * as SecretRouter from './secret.js'
+export * as ImageRouter from './image.js'

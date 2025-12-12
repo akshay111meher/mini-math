@@ -1,6 +1,6 @@
 import { Role, RoleStore } from '@mini-math/rbac'
 import type { RequestHandler } from 'express'
-import { SessionUser } from 'src/auth.js'
+import { SessionUser } from '../routers/auth/auth.js'
 
 import { makeLogger } from '@mini-math/logger'
 const logger = makeLogger('role-middlwares')
@@ -33,8 +33,6 @@ export const revertIfNoRole =
         }
         logger.info(`User ${user} has no role ${allRoles}, reverting`)
         return res.status(403).json({ success: false, message: 'forbidden for role' })
-
-        return next()
       } catch (err) {
         logger.error(`Error while fetching roles for user ${user}: ${(err as Error).message}`)
         return res.status(500).json({ success: false, message: 'internal server error' })

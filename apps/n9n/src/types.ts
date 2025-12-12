@@ -13,6 +13,7 @@ import {
   PostgresImageStore,
   config as adapterConfig,
   PostgresUserStore,
+  PostgresCdpAccountStore,
 } from '@mini-math/adapters'
 
 import { config } from 'dotenv'
@@ -31,6 +32,7 @@ const secretStore = new PostgresSecretStore(adapterConfig.getPostgresUrl())
 const sessionStore = new RedisStore(adapterConfig.getRedisUrl())
 const imageStore = new PostgresImageStore(adapterConfig.getPostgresUrl())
 const userStore = new PostgresUserStore(adapterConfig.getPostgresUrl())
+const cdpAccountStore = new PostgresCdpAccountStore(adapterConfig.getPostgresUrl())
 
 export class App {
   public static async start_server(
@@ -49,6 +51,7 @@ export class App {
       userStore,
       queue,
       sessionStore,
+      cdpAccountStore,
       DOMAIN,
       SIWE_DOMAIN,
       'super-long-session-secret',

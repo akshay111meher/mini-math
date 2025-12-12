@@ -3,13 +3,15 @@ import { z } from 'zod'
 export const UserRecordSchema = z.object({
   userId: z.string(),
   storageCredits: z.number(),
-  executionCredit: z.number(),
+  executionCredits: z.number(),
+  cdpAccountCredits: z.number(),
 })
 export type UserRecord = z.infer<typeof UserRecordSchema>
 
 export const CreditDeltaSchema = z.object({
   storageCredits: z.number().optional(),
-  executionCredit: z.number().optional(),
+  executionCredits: z.number().optional(),
+  cdpAccountCredits: z.number().optional(),
 })
 export type CreditDelta = z.infer<typeof CreditDeltaSchema>
 
@@ -28,9 +30,14 @@ export abstract class UserStore {
 
   // PUBLIC API
 
-  public async create(userId: string, storageCredits = 0, executionCredit = 0): Promise<boolean> {
+  public async create(
+    userId: string,
+    storageCredits = 0,
+    executionCredit = 0,
+    cdpAccountCredits = 0,
+  ): Promise<boolean> {
     await this.ensureInitialized()
-    return this._create(userId, storageCredits, executionCredit)
+    return this._create(userId, storageCredits, executionCredit, cdpAccountCredits)
   }
 
   public async get(userId: string): Promise<UserRecord | undefined> {
@@ -73,7 +80,8 @@ export abstract class UserStore {
   protected abstract _create(
     userId: string,
     storageCredits: number,
-    executionCredit: number,
+    executionCredits: number,
+    cdpAccountCredits: number,
   ): Promise<boolean>
 
   protected abstract _get(userId: string): Promise<UserRecord | undefined>

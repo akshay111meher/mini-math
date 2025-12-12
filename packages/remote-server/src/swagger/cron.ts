@@ -1,7 +1,7 @@
 import { RouteConfig } from '@asteasolutions/zod-to-openapi'
 import { WorkflowCore } from '@mini-math/workflow'
 import { z } from 'zod'
-import { StandardResponse } from './validate.js'
+import { StandardResponse, ValidationError } from './validate.js'
 
 export const CRON = 'Cron Jobs'
 
@@ -42,6 +42,14 @@ export const cron: RouteConfig = {
     200: {
       description: 'When Cron job is successfully loaded',
       content: { 'application/json': { schema: StandardResponse } },
+    },
+    401: {
+      description: 'Unauthorized',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+    400: {
+      description: 'Validation Error',
+      content: { 'application/json': { schema: ValidationError } },
     },
     404: {
       description: 'When Cron job is failed',

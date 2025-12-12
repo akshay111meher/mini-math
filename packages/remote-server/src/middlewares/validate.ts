@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
 import { makeLogger } from '@mini-math/logger'
+import { IssueSchemaType } from 'src/swagger/validate.js'
 
 const logger = makeLogger('validate-middleware')
 
@@ -11,11 +12,14 @@ export function validateBody<T extends z.ZodTypeAny>(schema: T) {
     const result = schema.safeParse(req.body)
 
     if (!result.success) {
-      const issues = result.error.issues.map((issue) => ({
-        path: issue.path.join('.'),
-        message: issue.message,
-        code: issue.code,
-      }))
+      const issues = result.error.issues.map(
+        (issue) =>
+          ({
+            path: issue.path.join('.'),
+            message: issue.message,
+            code: issue.code,
+          }) as IssueSchemaType,
+      )
 
       logger.error(
         JSON.stringify({

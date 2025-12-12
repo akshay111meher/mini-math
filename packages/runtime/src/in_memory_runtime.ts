@@ -1,13 +1,8 @@
 // inMemoryRuntimeStore.ts
 import { ZodError } from 'zod'
 import { Runtime, RuntimeDef, RuntimeStateSchema } from './runtime.js'
-import {
-  RuntimeStore,
-  RuntimeStoreError,
-  type RuntimeStoreErrorCode,
-  type ListOptions,
-  type ListResult,
-} from './runtimeStore.js'
+import { RuntimeStore, RuntimeStoreError, type RuntimeStoreErrorCode } from './runtimeStore.js'
+import { ListOptions, ListResult } from '@mini-math/utils'
 
 export class InMemoryRuntimeStore extends RuntimeStore {
   private readonly store = new Map<string, Runtime>()
@@ -106,7 +101,7 @@ export class InMemoryRuntimeStore extends RuntimeStore {
     return rt.serialize() // plain data, safe to hand out
   }
 
-  public async _list(options?: ListOptions): Promise<ListResult> {
+  public async _list(options?: ListOptions): Promise<ListResult<RuntimeDef>> {
     const limit = Math.max(1, Math.min(options?.limit ?? 50, 100))
     const all = Array.from(this.store.entries())
       .sort((a, b) => a[0].localeCompare(b[0]))

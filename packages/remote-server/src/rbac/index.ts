@@ -65,7 +65,8 @@ export function handleGrantCredits(userStore: UserStore): RequestHandler {
       const createResult = await userStore.create(
         payload.userId,
         payload.storageCredits,
-        payload.executionCredit,
+        payload.executionCredits,
+        payload.cdpAccountCredits,
       )
       if (createResult) {
         return res

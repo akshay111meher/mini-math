@@ -63,14 +63,16 @@ export class InMemoryUserStore extends UserStore {
   protected async _create(
     userId: string,
     storageCredits: number,
-    executionCredit: number,
+    executionCredits: number,
+    cdpAccountCredits: number,
   ): Promise<boolean> {
     if (this.store.has(userId)) return false
 
     this.store.set(userId, {
       userId,
       storageCredits,
-      executionCredit,
+      executionCredits,
+      cdpAccountCredits,
     })
 
     return true
@@ -88,7 +90,8 @@ export class InMemoryUserStore extends UserStore {
     const existing = this.store.get(userId) ?? {
       userId,
       storageCredits: 0,
-      executionCredit: 0,
+      executionCredits: 0,
+      cdpAccountCredits: 0,
     }
 
     const updated: UserRecord = {
@@ -104,13 +107,15 @@ export class InMemoryUserStore extends UserStore {
     const existing = this.store.get(userId) ?? {
       userId,
       storageCredits: 0,
-      executionCredit: 0,
+      executionCredits: 0,
+      cdpAccountCredits: 0,
     }
 
     const updated: UserRecord = {
       userId,
       storageCredits: existing.storageCredits + (delta.storageCredits ?? 0),
-      executionCredit: existing.executionCredit + (delta.executionCredit ?? 0),
+      executionCredits: existing.executionCredits + (delta.executionCredits ?? 0),
+      cdpAccountCredits: existing.cdpAccountCredits + (delta.cdpAccountCredits ?? 0),
     }
 
     this.store.set(userId, updated)

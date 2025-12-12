@@ -94,7 +94,7 @@ export function verifySiwe(REQUESTING_DOMAIN: string) {
         loggedInAt: new Date().toISOString(),
       }
 
-      res.json({
+      return res.json({
         ok: true,
         address: req.session.user.address,
         chainId: req.session.user.chainId,

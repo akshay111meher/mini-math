@@ -27,7 +27,7 @@ export function handleUpdateImage(imageStore: ImageStore): RequestHandler {
             },
           })
         } else {
-          return res.status(400).json({
+          return res.status(403).json({
             success: false,
             message: 'workflow-image update failed',
           })

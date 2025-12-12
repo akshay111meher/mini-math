@@ -59,14 +59,16 @@ export class PostgresUserStore extends UserStore {
   protected async _create(
     userId: string,
     storageCredits: number,
-    executionCredit: number,
+    executionCredits: number,
+    cdpAccountCredits: number,
   ): Promise<boolean> {
     const res = await this.db
       .insert(users)
       .values({
         userId,
         storageCredits,
-        executionCredit,
+        executionCredits,
+        cdpAccountCredits,
       })
       .onConflictDoNothing()
       .returning({ userId: users.userId })
@@ -79,7 +81,8 @@ export class PostgresUserStore extends UserStore {
       .select({
         userId: users.userId,
         storageCredits: users.storageCredits,
-        executionCredit: users.executionCredit,
+        executionCredits: users.executionCredits,
+        cdpAccountCredits: users.cdpAccountCredits,
       })
       .from(users)
       .where(eq(users.userId, userId))
@@ -90,7 +93,8 @@ export class PostgresUserStore extends UserStore {
     return {
       userId: row.userId,
       storageCredits: row.storageCredits ?? 0,
-      executionCredit: row.executionCredit ?? 0,
+      executionCredits: row.executionCredits ?? 0,
+      cdpAccountCredits: row.cdpAccountCredits ?? 0,
     }
   }
 
@@ -106,7 +110,8 @@ export class PostgresUserStore extends UserStore {
       const created: UserRecord = {
         userId,
         storageCredits: patch.storageCredits ?? 0,
-        executionCredit: patch.executionCredit ?? 0,
+        executionCredits: patch.executionCredits ?? 0,
+        cdpAccountCredits: patch.cdpAccountCredits ?? 0,
       }
 
       await this.db
@@ -114,13 +119,15 @@ export class PostgresUserStore extends UserStore {
         .values({
           userId,
           storageCredits: created.storageCredits,
-          executionCredit: created.executionCredit,
+          executionCredits: created.executionCredits,
+          cdpAccountCredits: created.cdpAccountCredits,
         })
         .onConflictDoUpdate({
           target: users.userId,
           set: {
             storageCredits: sql`excluded."storageCredits"`,
-            executionCredit: sql`excluded."executionCredits"`,
+            executionCredits: sql`excluded."executionCredits"`,
+            cdpAccountCredits: sql`excluded."cdpAccountCredits"`,
           },
         })
 
@@ -130,14 +137,16 @@ export class PostgresUserStore extends UserStore {
     const updated: UserRecord = {
       userId,
       storageCredits: patch.storageCredits ?? existing.storageCredits,
-      executionCredit: patch.executionCredit ?? existing.executionCredit,
+      executionCredits: patch.executionCredits ?? existing.executionCredits,
+      cdpAccountCredits: patch.cdpAccountCredits ?? existing.cdpAccountCredits,
     }
 
     await this.db
       .update(users)
       .set({
         storageCredits: updated.storageCredits,
-        executionCredit: updated.executionCredit,
+        executionCredits: updated.executionCredits,
+        cdpAccountCredits: updated.cdpAccountCredits,
       })
       .where(eq(users.userId, userId))
 
@@ -148,13 +157,15 @@ export class PostgresUserStore extends UserStore {
     const existing = (await this._get(userId)) ?? {
       userId,
       storageCredits: 0,
-      executionCredit: 0,
+      executionCredits: 0,
+      cdpAccountCredits: 0,
     }
 
     const updated: UserRecord = {
       userId,
       storageCredits: existing.storageCredits + (delta.storageCredits ?? 0),
-      executionCredit: existing.executionCredit + (delta.executionCredit ?? 0),
+      executionCredits: existing.executionCredits + (delta.executionCredits ?? 0),
+      cdpAccountCredits: existing.cdpAccountCredits + (delta.cdpAccountCredits ?? 0),
     }
 
     await this.db
@@ -162,13 +173,15 @@ export class PostgresUserStore extends UserStore {
       .values({
         userId,
         storageCredits: updated.storageCredits,
-        executionCredit: updated.executionCredit,
+        executionCredits: updated.executionCredits,
+        cdpAccountCredits: updated.cdpAccountCredits,
       })
       .onConflictDoUpdate({
         target: users.userId,
         set: {
           storageCredits: updated.storageCredits,
-          executionCredit: updated.executionCredit,
+          executionCredits: updated.executionCredits,
+          cdpAccountCredits: updated.cdpAccountCredits,
         },
       })
 
@@ -206,7 +219,8 @@ export class PostgresUserStore extends UserStore {
       .select({
         userId: users.userId,
         storageCredits: users.storageCredits,
-        executionCredit: users.executionCredit,
+        executionCredits: users.executionCredits,
+        cdpAccountCredits: users.cdpAccountCredits,
       })
       .from(users)
       .offset(cursor)
@@ -215,7 +229,8 @@ export class PostgresUserStore extends UserStore {
     const items: UserRecord[] = rows.map((r) => ({
       userId: r.userId,
       storageCredits: r.storageCredits ?? 0,
-      executionCredit: r.executionCredit ?? 0,
+      executionCredits: r.executionCredits ?? 0,
+      cdpAccountCredits: r.cdpAccountCredits ?? 0,
     }))
 
     const nextCursor = cursor + limit < total ? String(cursor + limit) : undefined

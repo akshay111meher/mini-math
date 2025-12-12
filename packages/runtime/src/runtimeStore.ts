@@ -1,4 +1,5 @@
 // runtimeStore.ts
+import { ListOptions, ListResult } from '@mini-math/utils'
 import type { RuntimeDef, Runtime } from './runtime.js'
 
 export type RuntimeStoreErrorCode =
@@ -17,16 +18,6 @@ export class RuntimeStoreError extends Error {
     super(message)
     this.name = 'RuntimeStoreError'
   }
-}
-
-export interface ListOptions {
-  cursor?: string
-  limit?: number
-}
-
-export interface ListResult {
-  items: RuntimeDef[]
-  nextCursor?: string
 }
 
 /**
@@ -92,7 +83,7 @@ export abstract class RuntimeStore {
   }
 
   /** List runtime snapshots (paged). */
-  public async list(options?: ListOptions): Promise<ListResult> {
+  public async list(options?: ListOptions): Promise<ListResult<RuntimeDef>> {
     await this.ensureInitialized()
     return this._list(options)
   }
@@ -126,7 +117,7 @@ export abstract class RuntimeStore {
 
   protected abstract _snapshot(workflowId: string): Promise<RuntimeDef>
 
-  protected abstract _list(options?: ListOptions): Promise<ListResult>
+  protected abstract _list(options?: ListOptions): Promise<ListResult<RuntimeDef>>
 
   protected abstract _seedIfEmpty(workflowId: string, entry: string): Promise<Runtime>
 }

@@ -1,6 +1,6 @@
 import { RouteConfig } from '@asteasolutions/zod-to-openapi'
 import { BaseSecretSchema, SecretDataSchema, SecretIdenfiferSchema } from '@mini-math/secrets'
-import { StandardResponse } from './validate.js'
+import { StandardResponse, ValidationError } from './validate.js'
 import z from 'zod'
 
 const SECRET = 'SECRET'
@@ -20,6 +20,14 @@ export const storeSecret: RouteConfig = {
   responses: {
     200: {
       description: 'When secret is successfully stored',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+    400: {
+      description: 'Validation Error',
+      content: { 'application/json': { schema: ValidationError } },
+    },
+    401: {
+      description: 'Unauthorized',
       content: { 'application/json': { schema: StandardResponse } },
     },
     429: {
@@ -51,6 +59,14 @@ export const removeSecret: RouteConfig = {
       description: 'When secret is not removed',
       content: { 'application/json': { schema: StandardResponse } },
     },
+    401: {
+      description: 'Unauthorized',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+    400: {
+      description: 'Validation Error',
+      content: { 'application/json': { schema: ValidationError } },
+    },
   },
   security: [{ cookieAuth: [] }],
 }
@@ -70,7 +86,17 @@ export const fetchSecret: RouteConfig = {
   responses: {
     200: {
       description: 'When secret is successfully removed',
-      content: { 'application/json': { schema: SecretDataSchema } },
+      content: {
+        'application/json': { schema: StandardResponse.extend({ data: SecretDataSchema }) },
+      },
+    },
+    401: {
+      description: 'Unauthorized',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+    400: {
+      description: 'Validation Error',
+      content: { 'application/json': { schema: ValidationError } },
     },
     404: {
       description: 'When secret is not found',
@@ -88,10 +114,16 @@ export const fetchAllSecretIdentifiers: RouteConfig = {
   responses: {
     200: {
       description: 'When secrets are successully found',
-      content: { 'application/json': { schema: z.array(z.string()) } },
+      content: {
+        'application/json': { schema: StandardResponse.extend({ data: z.array(z.string()) }) },
+      },
     },
     404: {
       description: 'When secrets identifiers are not found',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+    401: {
+      description: 'Unauthorized',
       content: { 'application/json': { schema: StandardResponse } },
     },
   },

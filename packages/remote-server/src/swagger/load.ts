@@ -1,5 +1,5 @@
 import { RouteConfig } from '@asteasolutions/zod-to-openapi'
-import { ID, StandardResponse } from './validate.js'
+import { ID, StandardResponse, ValidationError } from './validate.js'
 import { ExpectingInputFor, WorkflowCore, WorkflowSchema } from '@mini-math/workflow'
 import z from 'zod'
 import { ExternalInputId, Input, NodeRef } from '@mini-math/nodes'
@@ -25,7 +25,11 @@ export const load: RouteConfig = {
       content: { 'application/json': { schema: ID } },
     },
     400: {
-      description: 'error',
+      description: 'Validator Error',
+      content: { 'application/json': { schema: ValidationError } },
+    },
+    401: {
+      description: 'Unauthorized',
       content: { 'application/json': { schema: StandardResponse } },
     },
   },
@@ -67,6 +71,14 @@ export const fetch: RouteConfig = {
         },
       },
     },
+    400: {
+      description: 'Validator Error',
+      content: { 'application/json': { schema: ValidationError } },
+    },
+    401: {
+      description: 'Unauthorized',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
   },
   security: [{ cookieAuth: [] }],
 }
@@ -92,6 +104,18 @@ export const externalInput: RouteConfig = {
   responses: {
     200: {
       description: 'When external input is successfully accepted',
+      content: { 'application/json': { schema: StandardResponse.extend({ data: WorkflowCore }) } },
+    },
+    400: {
+      description: 'Validator Error / Wrong Input Expected',
+      content: { 'application/json': { schema: ValidationError } },
+    },
+    401: {
+      description: 'Unauthorized',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+    409: {
+      description: 'Workflow Finished',
       content: { 'application/json': { schema: StandardResponse } },
     },
   },

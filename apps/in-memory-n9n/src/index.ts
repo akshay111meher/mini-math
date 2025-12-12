@@ -8,7 +8,7 @@ import { InMemoryKeyValueStore } from '@mini-math/keystore'
 import { InMemoryRoleStore, InMemoryUserStore } from '@mini-math/rbac'
 
 import { InMemoryQueue } from '@mini-math/queue'
-import { InMemorySecretStore } from '@mini-math/secrets'
+import { InMemoryCdpStore, InMemorySecretStore } from '@mini-math/secrets'
 import { InMemoryImageStore } from '@mini-math/images'
 
 const INIT_PLATFORM_OWNER = '0x29e78bB5ef59a7fa66606c665408D6E680F5a06f'
@@ -21,6 +21,7 @@ const secretStore = new InMemorySecretStore()
 const roleStore = new InMemoryRoleStore(INIT_PLATFORM_OWNER)
 const imageStore = new InMemoryImageStore()
 const userStore = new InMemoryUserStore()
+const cdpAccountStore = new InMemoryCdpStore()
 
 for (let i = 1; i <= 10; i++) {
   const worker = new RemoteWorker(
@@ -47,6 +48,7 @@ const server = new Server(
   userStore,
   queue,
   sessionStore,
+  cdpAccountStore,
   DOMAIN,
   SIWE_DOMAIN,
   'super-long-session-secret',

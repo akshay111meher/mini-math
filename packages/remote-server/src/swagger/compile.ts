@@ -1,5 +1,5 @@
 import { RouteConfig } from '@asteasolutions/zod-to-openapi'
-import { VALIDATE, StandardResponse } from './validate.js'
+import { VALIDATE, StandardResponse, ValidationError } from './validate.js'
 import { WorkflowCore } from '@mini-math/workflow'
 
 export const compile: RouteConfig = {
@@ -21,7 +21,7 @@ export const compile: RouteConfig = {
     },
     400: {
       description: 'Bad Workflow',
-      content: { 'application/json': { schema: StandardResponse } },
+      content: { 'application/json': { schema: ValidationError } },
     },
   },
 }

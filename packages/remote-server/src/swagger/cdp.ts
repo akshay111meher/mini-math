@@ -1,6 +1,8 @@
 import { RouteConfig } from '@asteasolutions/zod-to-openapi'
 import { z } from 'zod'
 import { StandardResponse } from './validate.js'
+import { ListOptionsSchema, makeListResultSchema } from '@mini-math/utils'
+import { CdpAccountNameSchema } from '@mini-math/secrets'
 
 const CDP = 'CDP'
 
@@ -69,8 +71,7 @@ export const FaucetResponseSchema = z
   .openapi('FaucetResponse')
 
 export const ExportAccountSchema = z.object({
-  accountName: z.string().optional().describe('Account name'),
-  address: z.string().optional().describe('Account address'),
+  accountName: z.string().describe('Account name '),
 })
 
 export const ExportAccountResponseSchema = z
@@ -217,6 +218,31 @@ export const exportAccount: RouteConfig = {
     400: {
       description: 'Bad request',
       content: { 'application/json': { schema: StandardResponse } },
+    },
+  },
+  security: [{ cookieAuth: [] }],
+}
+
+export const fetchAccountNames: RouteConfig = {
+  method: 'post',
+  path: '/cdp/fetchAccountNames',
+  tags: [CDP],
+  summary: 'List the cdp account names',
+  request: {
+    body: {
+      content: {
+        'application/json': { schema: ListOptionsSchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Status of the image',
+      content: {
+        'application/json': {
+          schema: StandardResponse.extend({ data: makeListResultSchema(CdpAccountNameSchema) }),
+        },
+      },
     },
   },
   security: [{ cookieAuth: [] }],

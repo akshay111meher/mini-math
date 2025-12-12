@@ -20,13 +20,10 @@ export function handleDeleteImage(imageStore: ImageStore): RequestHandler {
         })
       }
 
-      return res.status(200).json({
+      return res.status(202).json({
         success: true,
         message: 'workflow-image deleted successfully',
-        data: {
-          owner: userAddress,
-          workflowName,
-        },
+        data: workflowName,
       })
     } catch (err) {
       return next(err)

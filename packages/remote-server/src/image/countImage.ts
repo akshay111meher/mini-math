@@ -9,10 +9,7 @@ export function handleCountImages(imageStore: ImageStore): RequestHandler {
 
       return res.status(200).json({
         success: true,
-        data: {
-          owner: userAddress,
-          count,
-        },
+        data: count,
       })
     } catch (err) {
       return next(err)

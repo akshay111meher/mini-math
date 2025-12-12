@@ -87,16 +87,12 @@ class CdpService {
     }
   }
 
-  async exportAccount(params: {
-    accountName?: string
-    address?: string
-  }): Promise<{ privateKey: string }> {
-    if (!params.accountName && !params.address) {
+  async exportAccount(params: { accountName: string }): Promise<{ privateKey: string }> {
+    if (!params.accountName) {
       throw new Error('Either accountName or address is required')
     }
     const result = await this.client.evm.exportAccount({
       ...(params.accountName ? { name: params.accountName } : {}),
-      ...(params.address ? { address: params.address as `0x${string}` } : {}),
     })
     return { privateKey: result }
   }

@@ -1,6 +1,6 @@
 import { RouteConfig } from '@asteasolutions/zod-to-openapi'
 import { GrantCreditDeltaSchema, GrantOrRevokeRoleSchema } from '@mini-math/rbac'
-import { StandardResponse } from './validate.js'
+import { StandardResponse, ValidationError } from './validate.js'
 
 const RBAC = 'RBAC'
 
@@ -21,8 +21,12 @@ export const grantRole: RouteConfig = {
       description: 'When role is successfully granted',
       content: { 'application/json': { schema: StandardResponse } },
     },
+    400: {
+      description: 'Validation Error',
+      content: { 'application/json': { schema: ValidationError } },
+    },
     401: {
-      description: 'When role is not granted',
+      description: 'Unauthorized/Role-not-granted',
       content: { 'application/json': { schema: StandardResponse } },
     },
   },
@@ -46,6 +50,18 @@ export const grantCredits: RouteConfig = {
       description: 'When credit is successfully granted',
       content: { 'application/json': { schema: StandardResponse } },
     },
+    400: {
+      description: 'Validation Error',
+      content: { 'application/json': { schema: ValidationError } },
+    },
+    401: {
+      description: 'Unauthorized',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
+    403: {
+      description: 'Forbidden',
+      content: { 'application/json': { schema: StandardResponse } },
+    },
   },
   security: [{ cookieAuth: [] }],
 }
@@ -66,6 +82,10 @@ export const revokeRole: RouteConfig = {
     200: {
       description: 'When role is successfully revoked',
       content: { 'application/json': { schema: StandardResponse } },
+    },
+    400: {
+      description: 'Validation Error',
+      content: { 'application/json': { schema: ValidationError } },
     },
     401: {
       description: 'When role is not revoked',

@@ -40,8 +40,8 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@coinbase/cdp-sdk": "^1.36.0",
     "@asteasolutions/zod-to-openapi": "^8.1.0",
+    "@coinbase/cdp-sdk": "^1.36.0",
     "@mini-math/compiler": "^0.1.0",
     "@mini-math/images": "^0.1.0",
     "@mini-math/keystore": "^0.1.0",
@@ -54,6 +54,7 @@
     "@mini-math/utils": "^0.1.0",
     "@mini-math/workflow": "^0.1.0",
     "cors": "^2.8.5",
+    "ethers": "^6.16.0",
     "express": "^5.1.0",
     "express-session": "^1.18.2",
     "helmet": "^8.1.0",
