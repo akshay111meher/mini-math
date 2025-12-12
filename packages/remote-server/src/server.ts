@@ -76,6 +76,7 @@ import { handleListImages } from './image/listImages.js'
 import { handleCountImages } from './image/countImage.js'
 import { handleGrantCredits, handleGrantRole, handleRevokeRole } from './rbac/index.js'
 import { handleUpdateImage } from './image/updateImage.js'
+import { cdpService } from './cdp.js'
 
 extendZodWithOpenApi(z)
 
@@ -369,6 +370,79 @@ export class Server {
       validateBody(StoreWorkflowImageSchema),
       handleUpdateImage(this.imageStore),
     )
+
+    // === CDP endpoints (SIWE authenticated) ===
+    this.app.post('/cdp/account', requireAuth(), async (req, res, next) => {
+      try {
+        const { accountName } = req.body as { accountName?: string }
+        if (!accountName)
+          return res.status(400).json({ success: false, error: 'accountName is required' })
+        const account = await cdpService.createOrGetAccount(accountName)
+        res.json({ success: true, data: account })
+      } catch (err) {
+        next(err)
+      }
+    })
+
+    this.app.get('/cdp/account/:accountName', requireAuth(), async (req, res, next) => {
+      try {
+        const { accountName } = req.params
+        const account = await cdpService.getAccount(accountName)
+        res.json({ success: true, data: account, exists: !!account })
+      } catch (err) {
+        next(err)
+      }
+    })
+
+    this.app.get('/cdp/token-balances', requireAuth(), async (req, res, next) => {
+      try {
+        const { address, network, pageSize, pageToken } = req.query
+        if (!address || !network)
+          return res.status(400).json({ success: false, error: 'address and network are required' })
+        const balances = await cdpService.listTokenBalances(
+          address as string,
+          network as string,
+          pageSize ? Number(pageSize) : undefined,
+          pageToken as string | undefined,
+        )
+        res.json({ success: true, data: balances })
+      } catch (err) {
+        next(err)
+      }
+    })
+
+    this.app.post('/cdp/faucet', requireAuth(), async (req, res, next) => {
+      try {
+        const {
+          address,
+          network = 'base-sepolia',
+          token = 'eth',
+        } = req.body as {
+          address?: string
+          network?: string
+          token?: string
+        }
+        if (!address) return res.status(400).json({ success: false, error: 'address is required' })
+        const faucet = await cdpService.requestFaucet(address, network, token)
+        res.json({ success: true, data: faucet })
+      } catch (err) {
+        next(err)
+      }
+    })
+
+    this.app.post('/cdp/export-account', requireAuth(), async (req, res, next) => {
+      try {
+        const { accountName, address } = req.body as { accountName?: string; address?: string }
+        if (!accountName && !address)
+          return res
+            .status(400)
+            .json({ success: false, error: 'accountName or address is required' })
+        const result = await cdpService.exportAccount({ accountName, address })
+        res.json({ success: true, data: result })
+      } catch (err) {
+        next(err)
+      }
+    })
 
     this.app.get('/me', requireAuth(), async (req, res) => {
       if (req?.session?.user) {
