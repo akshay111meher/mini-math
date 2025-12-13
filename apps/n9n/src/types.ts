@@ -74,6 +74,7 @@ export class App {
       workflowStore,
       runtimeStore,
       secretStore,
+      userStore,
       nodeFactory,
       workerName,
     )

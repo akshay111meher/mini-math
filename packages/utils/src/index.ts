@@ -5,6 +5,7 @@ export const mul = (a: number, b: number) => a * b
 export const WORKFLOW_CONSTANTS = {
   DEFAULT_TIMEOUT_MS: 60000,
   MAX_PARALLEL: 16,
+  MAX_EXECUTION_UNITS_PER_CLOCK: 10000,
 }
 
 export const deepClone = <T>(x: T): T => {

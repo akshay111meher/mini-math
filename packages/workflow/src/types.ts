@@ -59,10 +59,13 @@ export const WorkflowSchema = WorkflowCore.extend({ id: WorkflowRef })
   .openapi('Workflow')
 export type WorkflowDef = z.infer<typeof WorkflowSchema>
 
+export type JsonPrimitive = string | number | boolean | null
+
 export interface ClockOk {
   status: 'ok'
   node: NodeDefType
   exec: ExecutionResult
+  executionInfo: { creditsConsumed: number }
 }
 
 export interface ClockFinished {
@@ -86,4 +89,14 @@ export interface ClockWaitingInput {
   expectingInputFor: ExpectingInputForType
 }
 
-export type ClockResult = ClockOk | ClockFinished | ClockError | ClockTerminated | ClockWaitingInput
+export interface ClockInsufficientCredit {
+  status: 'insufficient_credit'
+}
+
+export type ClockResult =
+  | ClockOk
+  | ClockFinished
+  | ClockError
+  | ClockTerminated
+  | ClockWaitingInput
+  | ClockInsufficientCredit

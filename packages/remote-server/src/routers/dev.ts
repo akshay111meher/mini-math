@@ -9,6 +9,7 @@ import { RuntimeStore } from '@mini-math/runtime'
 import { Logger } from '@mini-math/logger'
 import { SecretStore } from '@mini-math/secrets'
 import { NodeFactoryType } from '@mini-math/compiler'
+import { WORKFLOW_CONSTANTS } from '@mini-math/utils'
 
 export function create(
   mustHaveOneOfTheRole: (roles: Role[]) => RequestHandler,
@@ -51,7 +52,7 @@ export function create(
       }
 
       while (!workflow.isFinished()) {
-        const info = await workflow.clock()
+        const info = await workflow.clock(BigInt(WORKFLOW_CONSTANTS.MAX_EXECUTION_UNITS_PER_CLOCK))
         logger.trace(`Clocked workflow: ${workflow.id()}`)
         logger.trace(JSON.stringify(info))
 
@@ -74,6 +75,13 @@ export function create(
           })
         }
 
+        if (info.status == 'insufficient_credit') {
+          return res.status(403).json({
+            status: info.status,
+            data: { workflow: wf, runtime: rt },
+          })
+        }
+
         await workflowStore.update(workflow.id(), wf)
         await runtimeStore.update(workflow.id(), rt)
         workflow = new Workflow(wf, nodeFactory, secrets, rt)
@@ -81,8 +89,8 @@ export function create(
 
       logger.trace(`Workflow finished: ${workflow.id()}`)
       const [wf] = workflow.serialize()
-      workflowStore.delete(workflow.id())
-      runtimeStore.delete(workflow.id())
+      await workflowStore.delete(workflow.id())
+      await runtimeStore.delete(workflow.id())
       return res.json({ status: true, data: wf })
     },
   )

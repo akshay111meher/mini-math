@@ -1,6 +1,7 @@
 import { IQueue } from '@mini-math/queue'
 import { RuntimeStore } from '@mini-math/runtime'
 import {
+  ClockOk,
   ExpectingInputForType,
   Workflow,
   WorkflowRefType,
@@ -10,6 +11,7 @@ import { SecretStore } from '@mini-math/secrets'
 import { Logger, makeLogger } from '@mini-math/logger'
 import { v4 } from 'uuid'
 import { NodeFactoryType } from '@mini-math/compiler'
+import { UserStore } from '@mini-math/rbac'
 
 const WORKER_CLOCK_TIME_IN_MS = 100
 
@@ -24,6 +26,7 @@ export class RemoteWorker {
     private workflowStore: WorkflowStore,
     private runtimeStore: RuntimeStore,
     private secretStore: SecretStore,
+    private userStore: UserStore,
     private nodeFactory: NodeFactoryType,
     name: string,
   ) {
@@ -65,7 +68,9 @@ export class RemoteWorker {
         return
       }
 
-      const info = await workflow.clock()
+      const userData = await this.userStore.get(workflow.owner())
+      const credits = BigInt(userData?.executionCredits ?? 0)
+      const info = await workflow.clock(credits)
       this.logger.trace(`Clocked workflow: ${workflow.id()}`)
       this.logger.trace(JSON.stringify(info))
 
@@ -74,7 +79,24 @@ export class RemoteWorker {
         return
       }
 
-      await this.handleInProgressWorkflow(workflow, wfId, messageId)
+      if (info.status == 'insufficient_credit') {
+        this.logger.debug(`User found with insufficient credits: ${workflow.owner()}`)
+        return
+      }
+
+      if (info.status == 'finished' || info.status == 'terminated') {
+        this.logger.error(
+          `Finished / Terminated Workflow ${workflow.id()} being tried to clock. This should not occur`,
+        )
+        return
+      }
+
+      if (info.status == 'error') {
+        this.logger.warn(`Workflow ${workflow.id()} encountered error while execution`)
+        return
+      }
+
+      await this.handleInProgressWorkflow(workflow, wfId, messageId, info)
     } catch (error) {
       await this.queue.nack(messageId, true)
       this.logger.error(`Worker error: ${JSON.stringify(error)}`)
@@ -85,6 +107,7 @@ export class RemoteWorker {
     workflow: Workflow,
     wfId: WorkflowRefType,
     messageId: string,
+    clockOkResult: ClockOk,
   ): Promise<void> {
     this.logger.trace(`Clock Status of workflow: continuing`)
 
@@ -100,6 +123,9 @@ export class RemoteWorker {
     this.logger.trace(`Released lock on workflow ${wfId} successfully`)
 
     const result2 = await Promise.all([
+      this.userStore.adjustCredits(workflow.owner(), {
+        executionCredits: -clockOkResult.executionInfo.creditsConsumed,
+      }),
       this.queue.enqueue(wfId, this.workerClockTime),
       this.queue.ack(messageId),
     ])

@@ -40,7 +40,7 @@ let workflow = new Workflow(workflowJson, printerNodeFactory, [])
 
 async function run() {
   while (!workflow.isFinished()) {
-    const info = await workflow.clock()
+    const info = await workflow.clock(BigInt(10000000))
 
     console.log(JSON.stringify(info, null, 2))
     const [wf, rt] = workflow.serialize()

@@ -29,6 +29,7 @@ for (let i = 1; i <= 10; i++) {
     workflowStore,
     runtimeStore,
     secretStore,
+    userStore,
     nodeFactory,
     `Simple Worker ${i}`,
   )

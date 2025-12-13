@@ -90,6 +90,10 @@ export class Workflow implements WorkflowGlobalState {
     return this.id()
   }
 
+  public owner(): string {
+    return this.workflowDef.owner
+  }
+
   public getGlobalState<T = unknown>(): T | undefined {
     return this.workflowDef.globalState === undefined
       ? undefined
@@ -225,7 +229,7 @@ export class Workflow implements WorkflowGlobalState {
     this.initialized = true
   }
 
-  public async clock(): Promise<ClockResult> {
+  public async clock(initExecutionCredits: bigint): Promise<ClockResult> {
     this.logger.trace(`Clocking workflow. ID: ${this.workflowDef.id}`)
     this._initialize()
 
@@ -267,6 +271,20 @@ export class Workflow implements WorkflowGlobalState {
       }
     }
 
+    const estimatedCost = await this._estimatedCost(currentNode)
+    if (initExecutionCredits < estimatedCost) {
+      this.logger.trace(
+        `Workflow ID: ${this.workflowDef.id} node=${currentNodeId} can't not be executed due to insufficient credits`,
+      )
+
+      this.runtime.queue.unshift(currentNodeId)
+      this.runtime.current = null
+
+      return {
+        status: 'insufficient_credit',
+      }
+    }
+
     const execResult = await this._safeRunNode(currentNode)
     this.logger.trace(`execResult: ${JSON.stringify(execResult)}`)
 
@@ -282,10 +300,12 @@ export class Workflow implements WorkflowGlobalState {
 
     this._scheduleChildren(currentNodeId, execResult)
 
+    this.logger.trace('workflow clocked successfully')
     return {
       status: 'ok',
       node: currentNode,
       exec: execResult,
+      executionInfo: { creditsConsumed: parseInt(estimatedCost.toString()) },
     }
   }
 
@@ -312,6 +332,11 @@ export class Workflow implements WorkflowGlobalState {
     const executable = this.nodeFactory.make(node, this)
     const execResult = await executable.execute()
     return execResult
+  }
+
+  private async _estimatedCost(node: NodeDefType): Promise<bigint> {
+    const executable = this.nodeFactory.make(node, this)
+    return executable.estimatedCostBeforeExecution()
   }
 
   private _applyExecResultToNode(node: NodeDefType, execResult: ExecutionResult): boolean {

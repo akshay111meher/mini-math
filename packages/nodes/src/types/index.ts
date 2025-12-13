@@ -20,4 +20,5 @@ export interface ExecutionResult {
 
 export interface ExecutableNodeBase {
   execute(): Promise<ExecutionResult>
+  estimatedCostBeforeExecution(): Promise<bigint>
 }

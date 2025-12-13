@@ -154,38 +154,42 @@ export class PostgresUserStore extends UserStore {
   }
 
   protected async _adjustCredits(userId: string, delta: CreditDelta): Promise<UserRecord> {
-    const existing = (await this._get(userId)) ?? {
-      userId,
-      storageCredits: 0,
-      executionCredits: 0,
-      cdpAccountCredits: 0,
-    }
+    const dStorage = delta.storageCredits ?? 0
+    const dExec = delta.executionCredits ?? 0
+    const dCdp = delta.cdpAccountCredits ?? 0
 
-    const updated: UserRecord = {
-      userId,
-      storageCredits: existing.storageCredits + (delta.storageCredits ?? 0),
-      executionCredits: existing.executionCredits + (delta.executionCredits ?? 0),
-      cdpAccountCredits: existing.cdpAccountCredits + (delta.cdpAccountCredits ?? 0),
-    }
-
-    await this.db
+    const [row] = await this.db
       .insert(users)
       .values({
         userId,
-        storageCredits: updated.storageCredits,
-        executionCredits: updated.executionCredits,
-        cdpAccountCredits: updated.cdpAccountCredits,
+        // if row doesn't exist yet, start from 0 + delta
+        storageCredits: dStorage,
+        executionCredits: dExec,
+        cdpAccountCredits: dCdp,
       })
       .onConflictDoUpdate({
         target: users.userId,
         set: {
-          storageCredits: updated.storageCredits,
-          executionCredits: updated.executionCredits,
-          cdpAccountCredits: updated.cdpAccountCredits,
+          // atomic increments/decrements
+          storageCredits: sql`${users.storageCredits} + ${dStorage}`,
+          executionCredits: sql`${users.executionCredits} + ${dExec}`,
+          cdpAccountCredits: sql`${users.cdpAccountCredits} + ${dCdp}`,
         },
       })
+      .returning({
+        userId: users.userId,
+        storageCredits: users.storageCredits,
+        executionCredits: users.executionCredits,
+        cdpAccountCredits: users.cdpAccountCredits,
+      })
 
-    return updated
+    // should always exist because insert/update returns a row
+    return {
+      userId: row!.userId,
+      storageCredits: row!.storageCredits,
+      executionCredits: row!.executionCredits,
+      cdpAccountCredits: row!.cdpAccountCredits,
+    }
   }
 
   protected async _exists(userId: string): Promise<boolean> {
