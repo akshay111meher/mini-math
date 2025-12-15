@@ -13,6 +13,7 @@ import { v4 } from 'uuid'
 import { NodeFactoryType } from '@mini-math/compiler'
 import { UserStore } from '@mini-math/rbac'
 
+import axios from 'axios'
 import crypto from 'node:crypto'
 
 const WORKER_CLOCK_TIME_IN_MS = 100
@@ -258,48 +259,65 @@ export class RemoteWorker {
       url: string
       eventType: string
       payload: unknown
-      secret: string // your per-endpoint signing secret
+      secret: string
       timeoutMs?: number
     },
-  ): Promise<{ ok: boolean; status: number; bodyText: string }> {
-    const { url, eventType, payload, secret, timeoutMs = 10_000 } = params
+  ): Promise<{ ok: boolean; status: number; ms: number; snippet?: string; error?: string }> {
+    const { url, eventType, payload, secret, timeoutMs } = params
 
-    const body = JSON.stringify({
+    const bodyObj = {
       id: crypto.randomUUID(),
       type: eventType,
       createdAt: new Date().toISOString(),
       data: payload,
-    })
+    }
 
-    const timestamp = Math.floor(Date.now() / 1000).toString()
-    const signature = crypto
-      .createHmac('sha256', secret)
-      .update(`${timestamp}.${body}`)
-      .digest('hex')
+    const body = JSON.stringify(bodyObj)
+    const ts = Math.floor(Date.now() / 1000).toString()
+    const sig = crypto.createHmac('sha256', secret).update(`${ts}.${body}`).digest('hex')
 
-    const controller = new AbortController()
-    const t = setTimeout(() => controller.abort(), timeoutMs)
-
+    const start = Date.now()
     try {
-      const res = await fetch(url, {
-        method: 'POST',
+      const res = await axios.post(url, body, {
         headers: {
           'Content-Type': 'application/json',
           'User-Agent': 'mini-math-webhooks/1.0',
-          'X-Webhook-Timestamp': timestamp,
-          'X-Webhook-Signature': `sha256=${signature}`,
+          'X-Webhook-Timestamp': ts,
+          'X-Webhook-Signature': `sha256=${sig}`,
         },
-        body,
-        signal: controller.signal,
+        timeout: timeoutMs ?? this.webhookTimeoutInMs,
+        // prevent axios from throwing on non-2xx so you can treat it like fetch
+        validateStatus: () => true,
+        // keep response small
+        maxContentLength: 1024 * 1024,
+        maxBodyLength: 1024 * 1024,
+        responseType: 'text',
       })
 
-      const bodyText = await res.text().catch(() => '')
-      const result = { ok: res.ok, status: res.status, bodyText }
-      this.logger.debug('Webhook response')
-      this.logger.debug(`Workflow Webhook ${wfId} Response:` + JSON.stringify(result))
-      return result
-    } finally {
-      clearTimeout(t)
+      const snippet =
+        typeof res.data === 'string'
+          ? res.data.slice(0, 1000)
+          : JSON.stringify(res.data).slice(0, 1000)
+
+      return {
+        ok: res.status >= 200 && res.status < 300,
+        status: res.status,
+        ms: Date.now() - start,
+        snippet,
+      }
+    } catch (e: any) {
+      // Axios throws on timeout / network errors
+      const msg =
+        e?.code === 'ECONNABORTED'
+          ? `Timeout after ${timeoutMs ?? this.webhookTimeoutInMs}ms`
+          : (e?.message ?? String(e))
+
+      return {
+        ok: false,
+        status: 0,
+        ms: Date.now() - start,
+        error: msg,
+      }
     }
   }
 
