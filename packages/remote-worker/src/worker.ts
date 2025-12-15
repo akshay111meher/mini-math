@@ -294,6 +294,7 @@ export class RemoteWorker {
         responseType: 'text',
       })
 
+      this.logger.debug(`Workflow: ${wfId}: webhook triggered successfully`)
       const snippet =
         typeof res.data === 'string'
           ? res.data.slice(0, 1000)
@@ -305,13 +306,9 @@ export class RemoteWorker {
         ms: Date.now() - start,
         snippet,
       }
-    } catch (e: any) {
-      // Axios throws on timeout / network errors
-      const msg =
-        e?.code === 'ECONNABORTED'
-          ? `Timeout after ${timeoutMs ?? this.webhookTimeoutInMs}ms`
-          : (e?.message ?? String(e))
-
+    } catch (e) {
+      const msg = String(e)
+      this.logger.error(`Workflow: ${wfId}: webhook error: ${msg}`)
       return {
         ok: false,
         status: 0,
