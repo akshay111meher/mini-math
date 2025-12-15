@@ -2,7 +2,7 @@
 # generate-workers.sh
 # Usage: ./generate-workers.sh <start-index> <end-index>
 
-set -eu  # POSIX-safe: no pipefail
+set -eu
 
 if [ "$#" -lt 2 ]; then
   echo "Usage: $0 <start-index> <end-index>" >&2
@@ -12,7 +12,6 @@ fi
 START="$1"
 END="$2"
 
-# Basic sanity checks (numeric and > 0)
 if ! [ "$START" -gt 0 ] 2>/dev/null; then
   echo "Error: <start-index> must be a positive integer" >&2
   exit 1
@@ -27,11 +26,6 @@ if [ "$END" -lt "$START" ]; then
   echo "Error: <end-index> must be greater than or equal to <start-index>" >&2
   exit 1
 fi
-
-# Require these to exist (from your shell env or .env when docker-compose runs)
-# This makes missing config obvious at generation time.
-: "${WEBHOOK_SECRET:?WEBHOOK_SECRET is required (set in .env or environment)}"
-: "${WEBHOOK_TIMEOUT_IN_MS:?WEBHOOK_TIMEOUT_IN_MS is required (set in .env or environment)}"
 
 echo "version: '3.9'"
 echo
@@ -55,9 +49,9 @@ while [ "$i" -le "$END" ]; do
       - --name
       - worker$i
       - --webhook-secret
-      - \${WEBHOOK_SECRET}
+      - \${WEBHOOK_SECRET?WEBHOOK_SECRET is required}
       - --webhook-timeout-in-ms
-      - "\${WEBHOOK_TIMEOUT_IN_MS}"
+      - "\${WEBHOOK_TIMEOUT_IN_MS?WEBHOOK_TIMEOUT_IN_MS is required}"
     environment:
       NODE_ENV: \${NODE_ENV:-production}
       ELASTICSEARCH_INDEX: \${ELASTICSEARCH_INDEX:-n9n-worker-$i}
