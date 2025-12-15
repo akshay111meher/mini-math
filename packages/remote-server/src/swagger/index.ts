@@ -22,8 +22,6 @@ const allDocs: RouteConfig[] = [
   ...WorkflowRouter.doc,
 ]
 
-console.log(allDocs.length)
-
 for (let index = 0; index < allDocs.length; index++) {
   const element = allDocs[index]
   if (element) {

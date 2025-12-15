@@ -41,9 +41,7 @@
       "compositePrimaryKeys": {
         "users_pk": {
           "name": "users_pk",
-          "columns": [
-            "userId"
-          ]
+          "columns": ["userId"]
         }
       },
       "uniqueConstraints": {},
@@ -90,10 +88,7 @@
       "compositePrimaryKeys": {
         "user_roles_user_id_role_pk": {
           "name": "user_roles_user_id_role_pk",
-          "columns": [
-            "user_id",
-            "role"
-          ]
+          "columns": ["user_id", "role"]
         }
       },
       "uniqueConstraints": {},
@@ -160,10 +155,7 @@
       "compositePrimaryKeys": {
         "secrets_user_id_secret_identifier_pk": {
           "name": "secrets_user_id_secret_identifier_pk",
-          "columns": [
-            "user_id",
-            "secret_identifier"
-          ]
+          "columns": ["user_id", "secret_identifier"]
         }
       },
       "uniqueConstraints": {},
@@ -509,10 +501,7 @@
       "compositePrimaryKeys": {
         "workflow_images_pk": {
           "name": "workflow_images_pk",
-          "columns": [
-            "owner_id",
-            "workflow_name"
-          ]
+          "columns": ["owner_id", "workflow_name"]
         }
       },
       "uniqueConstraints": {},
@@ -558,10 +547,7 @@
       "compositePrimaryKeys": {
         "cdp_accounts_user_id_account_name_pk": {
           "name": "cdp_accounts_user_id_account_name_pk",
-          "columns": [
-            "user_id",
-            "account_name"
-          ]
+          "columns": ["user_id", "account_name"]
         }
       },
       "uniqueConstraints": {},
@@ -574,10 +560,7 @@
     "public.role": {
       "name": "role",
       "schema": "public",
-      "values": [
-        "PlatformOwner",
-        "Developer"
-      ]
+      "values": ["PlatformOwner", "Developer"]
     }
   },
   "schemas": {},
