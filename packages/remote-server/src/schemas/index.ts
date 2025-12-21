@@ -3,8 +3,6 @@ export const ONLY_DEV = 'Only Developer Role'
 export const CDP = 'CDP'
 export const IMAGE = 'IMAGE'
 export const CRON = 'Cron Jobs'
-export const AFTER_LOADING = 'Requires workflow to be loaded'
-export const EXECUTION = 'Requires Execution Credits'
 export const WORKFLOW = ' Workflow'
 
 export * as CommonSchemas from './common.js'

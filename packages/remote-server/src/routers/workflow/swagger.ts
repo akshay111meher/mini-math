@@ -1,20 +1,16 @@
 import { RouteConfig } from '@asteasolutions/zod-to-openapi'
 import { ExpectingInputFor, WorkflowCore, WorkflowSchema } from '@mini-math/workflow'
-import {
-  AFTER_LOADING,
-  CommonSchemas,
-  CRON,
-  EXECUTION,
-  VALIDATE,
-  WORKFLOW,
-} from '../../schemas/index.js'
+import { CommonSchemas, CRON, VALIDATE, WORKFLOW } from '../../schemas/index.js'
 import z from 'zod'
+import { ListOptionsSchema } from '@mini-math/utils'
 
 export const validate: RouteConfig = {
   method: 'post',
   tags: [VALIDATE],
   path: '/validate',
-  summary: 'Validate Workflow Schema',
+  summary: 'Validate workflow',
+  description:
+    'Validates the submitted workflow schema and returns validation errors (if any). This endpoint only checks correctness and does not execute the workflow or consume credits.',
   request: {
     body: {
       content: {
@@ -38,7 +34,9 @@ export const compile: RouteConfig = {
   method: 'post',
   path: '/compile',
   tags: [VALIDATE],
-  summary: 'Compile the workflow',
+  summary: 'Compile workflow',
+  description:
+    'Compiles the submitted workflow into an executable form and returns compilation results. This does not run the workflow and does not consume credits.',
   request: {
     body: {
       content: {
@@ -62,7 +60,9 @@ export const cron: RouteConfig = {
   method: 'post',
   path: '/cron',
   tags: [CRON],
-  summary: 'Load a job with cron like execution',
+  summary: 'Create cron job',
+  description:
+    'Registers a workflow to run on a cron-like schedule. The workflow is validated and stored, then scheduled for execution according to the provided cron settings.',
   request: {
     body: {
       content: {
@@ -94,8 +94,10 @@ export const cron: RouteConfig = {
 export const initiate: RouteConfig = {
   method: 'post',
   path: '/initiate',
-  tags: [AFTER_LOADING],
-  summary: 'Initiate the workflow in backend. (Does not return the output of any node tough)',
+  tags: [WORKFLOW],
+  summary: 'Initiate workflow',
+  description:
+    'Starts execution of an already-loaded workflow by workflow ID. This kicks off the run in the backend and returns an initiation status (it does not return node outputs).',
   request: {
     body: {
       content: {
@@ -139,8 +141,10 @@ export const initiate: RouteConfig = {
 export const schedule: RouteConfig = {
   method: 'post',
   path: '/schedule',
-  tags: [AFTER_LOADING],
-  summary: 'schedule the workflow in backend. (Does not return the output of any node tough)',
+  tags: [WORKFLOW],
+  summary: 'Schedule workflow',
+  description:
+    'Schedules an already-loaded workflow for execution using the provided schedule settings. This creates a backend schedule entry and returns a status (it does not return node outputs).',
   request: {
     body: {
       content: {
@@ -184,8 +188,10 @@ export const schedule: RouteConfig = {
 export const load: RouteConfig = {
   method: 'post',
   path: '/load',
-  tags: [EXECUTION],
-  summary: 'Load Workflow Schema into engine',
+  tags: [WORKFLOW],
+  summary: 'Load workflow',
+  description:
+    'Validates and stores a workflow schema in the execution engine, returning a workflow ID that can be used to initiate, schedule, or fetch its state later.',
   request: {
     body: {
       content: {
@@ -214,7 +220,9 @@ export const fetch: RouteConfig = {
   method: 'post',
   path: '/fetch',
   tags: [WORKFLOW],
-  summary: 'Fetch the state of workflow',
+  summary: 'Fetch workflow state',
+  description:
+    'Returns the latest state of a workflow run by workflow ID. If the workflow is finished, the final result is returned; otherwise, the current status and any pending input requirements are returned.',
   request: {
     body: {
       content: {
@@ -261,7 +269,9 @@ export const externalInput: RouteConfig = {
   method: 'post',
   path: '/externalInput',
   tags: [WORKFLOW],
-  summary: 'Send External Input to Workflow',
+  summary: 'Send external input',
+  description:
+    'Submits external input to a workflow that is waiting for input. The backend validates the input against what the workflow expects and applies it to continue execution.',
   request: {
     body: {
       content: {
@@ -294,6 +304,29 @@ export const externalInput: RouteConfig = {
   security: [{ cookieAuth: [] }],
 }
 
+export const listWorkflows: RouteConfig = {
+  method: 'post',
+  path: '/listWorkflows',
+  tags: [WORKFLOW],
+  summary: 'List workflows',
+  description:
+    'Lists workflows visible to the authenticated user. Supports cursor-based pagination via the provided list options.',
+  request: {
+    body: {
+      content: {
+        'application/json': { schema: ListOptionsSchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Status of the image',
+      content: { 'application/json': { schema: CommonSchemas.StandardResponse } },
+    },
+  },
+  security: [{ cookieAuth: [] }],
+}
+
 export const doc: RouteConfig[] = [
   compile,
   cron,
@@ -303,4 +336,5 @@ export const doc: RouteConfig[] = [
   load,
   externalInput,
   fetch,
+  listWorkflows,
 ]

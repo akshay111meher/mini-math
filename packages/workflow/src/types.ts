@@ -34,7 +34,6 @@ export const WorkflowCore = z
   .openapi('WorkflowCore')
 
 export type WorkflowCoreType = z.infer<typeof WorkflowCore>
-const WorkflowOwnerRef = z.string()
 
 export const ExternalInputStorage = z.record(NodeRef, z.record(ExternalInputId, ExternalInputData))
 export type ExternalInputStorageType = z.infer<typeof ExternalInputStorage>
@@ -49,7 +48,7 @@ export const NextLinkedWorkflow = z
 export type NextLinkedWorkflowType = z.infer<typeof NextLinkedWorkflow>
 
 export const WorkflowSchema = WorkflowCore.extend({ id: WorkflowRef })
-  .extend({ owner: WorkflowOwnerRef })
+  .extend({ owner: z.string() })
   .extend({
     lock: Lock.optional(),
     inProgress: z.boolean().optional(),

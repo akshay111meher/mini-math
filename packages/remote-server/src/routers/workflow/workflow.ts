@@ -26,6 +26,8 @@ import { IQueue } from '@mini-math/queue'
 import z from 'zod'
 import { handleCronJob } from '../..//cron.js'
 import { CommonSchemas } from '../../schemas/index.js'
+import { ListOptionsSchema } from '@mini-math/utils'
+import { handleListWorkflows } from './listWorkflow.js'
 
 export { doc } from './swagger.js'
 
@@ -203,6 +205,13 @@ export function create(
     requireAuth(),
     validateBody(CommonSchemas.CronedWorkflowCoreSchema),
     handleCronJob(workflowStore, runtimeStore, queue, nodeFactory),
+  )
+
+  router.post(
+    '/listWorkflows',
+    requireAuth(),
+    validateBody(ListOptionsSchema),
+    handleListWorkflows(workflowStore),
   )
 
   return router

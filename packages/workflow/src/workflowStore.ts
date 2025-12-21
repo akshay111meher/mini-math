@@ -73,9 +73,9 @@ export abstract class WorkflowStore {
     return this._delete(workflowId)
   }
 
-  public async list(options?: ListOptions): Promise<ListResult<WorkflowDef>> {
+  public async list(owner: string, options?: ListOptions): Promise<ListResult<WorkflowDef>> {
     await this.ensureInitialized()
-    return this._list(options)
+    return this._list(owner, { ...options })
   }
 
   public async replace(workflowId: string, def: WorkflowDef): Promise<WorkflowDef> {
@@ -152,7 +152,7 @@ export abstract class WorkflowStore {
 
   protected abstract _delete(workflowId: string): Promise<void>
 
-  protected abstract _list(options?: ListOptions): Promise<ListResult<WorkflowDef>>
+  protected abstract _list(owner: string, options?: ListOptions): Promise<ListResult<WorkflowDef>>
 
   protected abstract _replace(workflowId: string, def: WorkflowDef): Promise<WorkflowDef>
 }

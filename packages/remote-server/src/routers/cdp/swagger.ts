@@ -10,7 +10,9 @@ const createAccount: RouteConfig = {
   method: 'post',
   path: `${basePath}/account`,
   tags: [CDP],
-  summary: 'Create or get a CDP account',
+  summary: 'Create CDP account',
+  description:
+    'Creates a new CDP account or returns the existing account if it already exists for the requested name/parameters. Requires an authenticated session.',
   request: {
     body: {
       content: {
@@ -41,7 +43,9 @@ const getAccount: RouteConfig = {
   method: 'get',
   path: `${basePath}/account/{accountName}`,
   tags: [CDP],
-  summary: 'Get a CDP account by name',
+  summary: 'Get CDP account',
+  description:
+    'Fetches details for a CDP account by its account name. Requires an authenticated session.',
   request: {
     params: z.object({
       accountName: z.string().describe('Name of the account'),
@@ -64,7 +68,9 @@ const getTokenBalances: RouteConfig = {
   method: 'get',
   path: `${basePath}/token-balances`,
   tags: [CDP],
-  summary: 'Get token balances for an address',
+  summary: 'Get token balances',
+  description:
+    'Returns token balances for a given address on the configured chain(s), based on the provided query parameters. Requires an authenticated session.',
   request: {
     query: CdpSchemas.TokenBalancesQuerySchema,
   },
@@ -92,6 +98,8 @@ const requestFaucet: RouteConfig = {
   path: `${basePath}/faucet`,
   tags: [CDP],
   summary: 'Request faucet tokens',
+  description:
+    'Requests testnet faucet tokens for an address/account according to the faucet request payload. Requires an authenticated session.',
   request: {
     body: {
       content: {
@@ -122,7 +130,9 @@ const exportAccount: RouteConfig = {
   method: 'post',
   path: `${basePath}/export-account`,
   tags: [CDP],
-  summary: 'Export account private key',
+  summary: 'Export private key',
+  description:
+    'Exports the private key for a CDP account (for backup or external use). Handle the response securely. Requires an authenticated session.',
   request: {
     body: {
       content: {
@@ -153,7 +163,9 @@ const fetchAccountNames: RouteConfig = {
   method: 'post',
   path: `${basePath}/fetchAccountNames`,
   tags: [CDP],
-  summary: 'List the cdp account names',
+  summary: 'List account names',
+  description:
+    'Lists available CDP account names for the authenticated user, with cursor-based pagination via the provided list options.',
   request: {
     body: {
       content: {

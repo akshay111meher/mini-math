@@ -8,6 +8,7 @@ export const clock: RouteConfig = {
   method: 'post',
   path: '/clock',
   tags: [REVOKED],
+  deprecated: true,
   summary: 'Clock existing workflow clocked by one unit',
   request: {
     body: {
@@ -23,6 +24,7 @@ export const run: RouteConfig = {
   method: 'post',
   path: '/run',
   tags: [ONLY_DEV],
+  deprecated: true,
   summary:
     'Run the workflow and wait for the workflow output in the same http response. Not to be used in the production',
   request: {

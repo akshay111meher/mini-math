@@ -79,9 +79,14 @@ export class InMemoryWorkflowStore extends WorkflowStore {
     this.store.delete(workflowId)
   }
 
-  public async _list(options?: ListOptions): Promise<ListResult<WorkflowDef>> {
+  public async _list(owner: string, options?: ListOptions): Promise<ListResult<WorkflowDef>> {
+    if (!owner) throw new WorkflowStoreError('VALIDATION', 'owner is required')
+
     const limit = Math.max(1, Math.min(options?.limit ?? 50, 100))
-    const all = Array.from(this.store.values()).sort((a, b) => a.id.localeCompare(b.id))
+
+    const all = Array.from(this.store.values())
+      .filter((w) => w.owner === owner)
+      .sort((a, b) => a.id.localeCompare(b.id))
 
     let start = 0
     if (options?.cursor) {

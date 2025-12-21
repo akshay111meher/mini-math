@@ -7,7 +7,9 @@ const nonce: RouteConfig = {
   method: 'get',
   path: '/siwe/nonce',
   tags: [AUTH],
-  summary: 'Get a single-use nonce for SIWE (Sign-In With Ethereum)',
+  summary: 'Get SIWE nonce',
+  description:
+    'Issues a single-use nonce for Sign-In With Ethereum (SIWE). The frontend must include this nonce in the SIWE message before asking the user to sign.',
   responses: {
     200: {
       description: 'Nonce issued',
@@ -24,7 +26,9 @@ const verify: RouteConfig = {
   method: 'post',
   path: '/siwe/verify',
   tags: [AUTH],
-  summary: 'Verify SIWE message + signature; establish session (cookie)',
+  summary: 'Verify SIWE login',
+  description:
+    'Verifies a SIWE message and signature, checks nonce validity, and establishes an authenticated session via cookie on success.',
   request: {
     body: {
       content: {
@@ -56,7 +60,9 @@ const logout: RouteConfig = {
   method: 'post',
   path: '/logout',
   tags: [AUTH],
-  summary: 'Destroy current session',
+  summary: 'Logout',
+  description:
+    'Destroys the current authenticated session and clears the session cookie (if present).',
   responses: {
     200: {
       description: 'Logged out',
@@ -72,7 +78,9 @@ const me: RouteConfig = {
   method: 'get',
   path: '/me',
   tags: [AUTH],
-  summary: 'Current authenticated user (session)',
+  summary: 'Get current user',
+  description:
+    'Returns the current authenticated user for the active session cookie. If no valid session exists, the response indicates the user is not logged in.',
   responses: {
     200: {
       description: 'Returns current user or null if not logged in',

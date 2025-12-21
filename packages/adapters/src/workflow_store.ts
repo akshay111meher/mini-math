@@ -214,7 +214,7 @@ export class PostgresWorkflowstore extends WorkflowStore {
     }
   }
 
-  protected async _list(options?: ListOptions): Promise<ListResult<WorkflowDef>> {
+  protected async _list(owner: string, options?: ListOptions): Promise<ListResult<WorkflowDef>> {
     try {
       const limit = options?.limit ?? 50
 
@@ -225,9 +225,10 @@ export class PostgresWorkflowstore extends WorkflowStore {
       const itemsQuery = this.db
         .select()
         .from(workflows)
+        .where(eq(workflows.owner, owner))
         .limit(limit)
         .offset(offset)
-        .orderBy(workflows.createdAt)
+        .orderBy(workflows.updatedAt)
 
       // total count (for pagination / nextCursor decision)
       const countQuery = this.db.select({ count: sql<number>`count(*)` }).from(workflows)
