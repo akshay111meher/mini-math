@@ -7,3 +7,11 @@ export const ScheduleBatchRequestSchema = z.object({
 })
 
 export type ScheduleBatchRequest = z.infer<typeof ScheduleBatchRequestSchema>
+
+export const ExistBatchRequestSchema = z.object({ batchId: z.string() })
+export type ExistBatchRequest = z.infer<typeof ExistBatchRequestSchema>
+
+export const BatchCreateResponseDataSchema = z.object({
+  batchId: z.string(),
+  workflowIds: z.array(z.string()),
+})

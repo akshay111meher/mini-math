@@ -11,17 +11,21 @@ import {
   type WorkflowBatchType,
   WorkflowStore,
   WorkflowCoreType,
+  WorkflowRefType,
 } from '@mini-math/workflow'
 
 import { workflowBatches, workflowBatchWorkflows } from './db/schema/7_batch_store.js'
 import * as schema from './db/schema/7_batch_store.js'
 
 import { PostgresWorkflowstore } from './workflow_store.js'
+import { RuntimeStore } from '@mini-math/runtime'
+import { PostgresRuntimeStore } from './runtime_store.js'
 
 type Db = NodePgDatabase<typeof schema>
 
 export class PostgresBatchStore extends BatchStore {
   public workflowStore: WorkflowStore
+  public runtimeStore: RuntimeStore
 
   private db!: Db
   private pool!: Pool
@@ -36,6 +40,7 @@ export class PostgresBatchStore extends BatchStore {
       postgresUrl,
       'PostgresWorkflowStoreForBatchStore',
     )
+    this.runtimeStore = new PostgresRuntimeStore(postgresUrl, 'PostgresRuntimeStoreForBatchStore')
     this.logger = makeLogger('PostgresBatchStore')
   }
 
@@ -209,12 +214,18 @@ export class PostgresBatchStore extends BatchStore {
     }
   }
 
-  protected async _list(options?: ListOptions): Promise<ListResult<WorkflowBatchType>> {
+  protected async _list(
+    owner: string,
+    options?: ListOptions,
+  ): Promise<ListResult<WorkflowBatchType>> {
     try {
       const cursor = options?.cursor ? Number.parseInt(options.cursor, 10) || 0 : 0
       const limit = options?.limit ?? 50
 
-      const totalRows = await this.db.select({ value: sql<number>`count(*)` }).from(workflowBatches)
+      const totalRows = await this.db
+        .select({ value: sql<number>`count(*)` })
+        .from(workflowBatches)
+        .where(eq(workflowBatches.owner, owner))
 
       const total = totalRows[0]?.value ?? 0
 
@@ -224,7 +235,8 @@ export class PostgresBatchStore extends BatchStore {
           batchId: workflowBatches.batchId,
         })
         .from(workflowBatches)
-        .orderBy(workflowBatches.owner, workflowBatches.batchId)
+        .where(eq(workflowBatches.owner, owner))
+        .orderBy(workflowBatches.batchId)
         .offset(cursor)
         .limit(limit)
 
@@ -264,7 +276,7 @@ export class PostgresBatchStore extends BatchStore {
       const nextCursor = cursor + limit < total ? String(cursor + limit) : undefined
       return { items, nextCursor }
     } catch (err) {
-      this.handleError('_list', err, { options })
+      this.handleError('_list', err, { owner, options })
     }
   }
 

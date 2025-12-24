@@ -38,3 +38,36 @@ export type ListResult<T> = {
   items: T[]
   nextCursor?: string
 }
+
+export type Mapper<T, R> = (item: T, index: number) => Promise<R> | R
+
+export async function mapLimit<T, R>(
+  items: readonly T[],
+  limit: number,
+  mapper: Mapper<T, R>,
+): Promise<R[]> {
+  if (!Number.isFinite(limit) || limit <= 0) {
+    throw new Error(`limit must be > 0, got ${limit}`)
+  }
+
+  const results = new Array<R>(items.length)
+  let next = 0
+
+  async function worker(): Promise<void> {
+    while (true) {
+      const i = next++
+      if (i >= items.length) return
+      results[i] = await mapper(items[i], i)
+    }
+  }
+
+  const workers = Math.min(limit, items.length)
+  await Promise.all(Array.from({ length: workers }, worker))
+  return results
+}
+
+export type Task<R> = () => Promise<R> | R
+
+export async function allLimit<R>(tasks: readonly Task<R>[], limit: number): Promise<R[]> {
+  return mapLimit(tasks, limit, (task) => task())
+}

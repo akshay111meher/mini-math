@@ -207,6 +207,9 @@ export class Server {
 
     this.app.use(SecretRouter.create(this.secretStore))
     this.app.use(ImageRouter.create(mustHaveMinimumStorageCredits, this.imageStore, this.userStore))
-    this.app.use(BatchJobRouter.basePath, BatchJobRouter.create(this.batchStore, this.logger))
+    this.app.use(
+      BatchJobRouter.basePath,
+      BatchJobRouter.create(this.batchStore, this.queue, this.logger),
+    )
   }
 }

@@ -54,6 +54,55 @@ export class InMemoryRuntimeStore extends RuntimeStore {
     }
   }
 
+  protected async _createBatchOrNone(
+    batch: { workflowId: string; initial?: Partial<RuntimeDef> }[],
+  ): Promise<Runtime[]> {
+    if (!batch?.length) return []
+
+    // 1) Validate ids + detect duplicates within the batch
+    const seen = new Set<string>()
+    for (const { workflowId } of batch) {
+      if (!workflowId) throw new RuntimeStoreError('VALIDATION', 'workflowId is required')
+      if (seen.has(workflowId)) {
+        throw new RuntimeStoreError('VALIDATION', `duplicate workflowId in batch: "${workflowId}"`)
+      }
+      seen.add(workflowId)
+    }
+
+    // 2) "OrNone": if ANY already exists, do nothing (return empty)
+    for (const { workflowId } of batch) {
+      if (this.store.has(workflowId)) return []
+    }
+
+    try {
+      // 3) Build/validate all defs first (so we don't partially insert)
+      const defs: RuntimeDef[] = batch.map(({ workflowId, initial }) =>
+        RuntimeStateSchema.parse({
+          queue: [],
+          visited: [],
+          current: null,
+          finished: false,
+          id: workflowId,
+          ...(initial ?? {}),
+        }),
+      )
+
+      // 4) Construct runtimes (still not inserted)
+      const runtimes = defs.map((def) => new Runtime(def))
+
+      // 5) Commit: insert all
+      for (const rt of runtimes) {
+        this.store.set(rt.serialize().id, rt) // adjust if your Runtime stores id differently
+      }
+
+      // 6) Return clones in the same order as input
+      return runtimes.map((rt) => this.cloneRuntime(rt))
+    } catch (err) {
+      console.error(err)
+      throw this.asStoreError(err, 'VALIDATION', 'Failed to create runtimes batch')
+    }
+  }
+
   public async _get(workflowId: string): Promise<Runtime> {
     if (!workflowId) throw new RuntimeStoreError('VALIDATION', 'workflowId is required')
     const existing = this.store.get(workflowId)

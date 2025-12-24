@@ -2,6 +2,7 @@ import { ListOptions, ListResult } from '@mini-math/utils'
 import { WorkflowCoreType } from './types.js'
 import { WorkflowStore } from './workflowStore.js'
 import { BatchStore, WorkflowBatchType } from './batchStore.js' // adjust path
+import { RuntimeStore } from '@mini-math/runtime'
 
 type BatchKey = string // `${owner}:${batchId}`
 const keyOf = (owner: string, batchId: string): BatchKey => `${owner}:${batchId}`
@@ -24,13 +25,15 @@ function applyListOptions<T>(items: T[], options?: ListOptions): ListResult<T> {
 
 export class InMemoryBatchStore extends BatchStore {
   public workflowStore: WorkflowStore
+  public runtimeStore: RuntimeStore
 
   // (owner,batchId) -> "workflowIds" (we will store indices as strings: "0","1","2"...)
   private batches = new Map<BatchKey, string[]>()
 
-  constructor(workflowStore: WorkflowStore) {
+  constructor(workflowStore: WorkflowStore, runtimeStore: RuntimeStore) {
     super()
     this.workflowStore = workflowStore
+    this.runtimeStore = runtimeStore
   }
 
   protected async initialize(): Promise<void> {
@@ -73,21 +76,22 @@ export class InMemoryBatchStore extends BatchStore {
     return this.batches.delete(keyOf(owner, batchId))
   }
 
-  protected async _list(options?: ListOptions): Promise<ListResult<WorkflowBatchType>> {
+  protected async _list(
+    owner: string,
+    options?: ListOptions,
+  ): Promise<ListResult<WorkflowBatchType>> {
     const items: WorkflowBatchType[] = []
 
     for (const [k, workflowIds] of this.batches.entries()) {
       const sep = k.indexOf(':')
-      const owner = sep === -1 ? k : k.slice(0, sep)
-      const batchId = sep === -1 ? '' : k.slice(sep + 1)
+      const kOwner = sep === -1 ? k : k.slice(0, sep)
+      if (kOwner !== owner) continue
 
-      items.push({ owner, batchId, workflowIds: [...workflowIds] })
+      const batchId = sep === -1 ? '' : k.slice(sep + 1)
+      items.push({ owner: kOwner, batchId, workflowIds: [...workflowIds] })
     }
 
-    items.sort((a, b) => {
-      if (a.owner !== b.owner) return a.owner.localeCompare(b.owner)
-      return a.batchId.localeCompare(b.batchId)
-    })
+    items.sort((a, b) => a.batchId.localeCompare(b.batchId))
 
     return applyListOptions(items, options)
   }

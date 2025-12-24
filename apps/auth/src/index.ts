@@ -8,19 +8,23 @@ import { main as main7 } from './7_cron.js'
 import { main as main8 } from './8_stress.js'
 import { main as main9 } from './9_images.js'
 import { main as main10 } from './10_credits.js'
+import { main as main11 } from './11_feHelpers.js'
+import { main as main12 } from './12_batch.js'
 
 // This is not right way to test, but comment out tests you don't want
 async function main() {
-  await main1()
-  await main2()
-  await main3()
-  await main4()
-  await main5()
-  await main6()
-  await main7()
-  await main8()
-  await main9()
-  await main10()
+  // await main1()
+  // await main2()
+  // await main3()
+  // await main4()
+  // await main5()
+  // await main6()
+  // await main7()
+  // await main8()
+  // await main9()
+  // await main10()
+  // await main11()
+  await main12()
 
   return 'Done'
 }

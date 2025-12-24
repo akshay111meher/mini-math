@@ -1,7 +1,7 @@
 import { Pool } from 'pg'
-import { Runtime, RuntimeDef, RuntimeStore } from '@mini-math/runtime'
+import { Runtime, RuntimeDef, RuntimeStore, RuntimeStoreError } from '@mini-math/runtime'
 import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres'
-import { eq, sql } from 'drizzle-orm'
+import { eq, sql, inArray } from 'drizzle-orm'
 import { ListOptions, ListResult } from '@mini-math/utils'
 
 import * as schema from './db/schema/3_runtime.js'
@@ -19,10 +19,10 @@ export class PostgresRuntimeStore extends RuntimeStore {
 
   private readonly postgresUrl: string
 
-  constructor(postgresUrl: string) {
+  constructor(postgresUrl: string, loggerName: string = 'runtime-store') {
     super()
     this.postgresUrl = postgresUrl
-    this.logger = makeLogger('runtime-store')
+    this.logger = makeLogger(loggerName)
   }
 
   private handleError(method: string, err: unknown, context?: Record<string, unknown>): never {
@@ -78,6 +78,58 @@ export class PostgresRuntimeStore extends RuntimeStore {
       return new Runtime(def)
     } catch (err) {
       this.handleError('_create', err, { workflowId })
+    }
+  }
+
+  protected async _createBatchOrNone(
+    batch: { workflowId: string; initial?: Partial<RuntimeDef> }[],
+  ): Promise<Runtime[]> {
+    if (!batch?.length) return []
+
+    // 1) Validate + detect duplicates inside the batch
+    const seen = new Set<string>()
+    for (const { workflowId } of batch) {
+      if (!workflowId) throw new RuntimeStoreError('VALIDATION', 'workflowId is required')
+      if (seen.has(workflowId)) {
+        throw new RuntimeStoreError('VALIDATION', `duplicate workflowId in batch: "${workflowId}"`)
+      }
+      seen.add(workflowId)
+    }
+
+    const ids = [...seen]
+
+    try {
+      return await this.db.transaction(async (tx) => {
+        // 2) "OrNone": if ANY already exists, do nothing
+        const existing = await tx
+          .select({ id: runtimes.id })
+          .from(runtimes)
+          .where(inArray(runtimes.id, ids))
+          .limit(1)
+
+        if (existing.length > 0) return []
+
+        // 3) Build all states first (so we fail before inserting anything)
+        const rowsToInsert: RuntimeInsert[] = batch.map(({ workflowId, initial }) => {
+          const state = buildRuntimeDef(workflowId, initial)
+          return {
+            id: state.id,
+            queue: state.queue,
+            visited: state.visited,
+            current: state.current,
+            finished: state.finished,
+          } satisfies RuntimeInsert
+        })
+
+        // 4) Insert all in one statement, return all inserted rows
+        const inserted = await tx.insert(runtimes).values(rowsToInsert).returning()
+
+        // 5) Return in the same order as input (DB returning order is not guaranteed)
+        const byId = new Map(inserted.map((r) => [r.id, r]))
+        return batch.map(({ workflowId }) => new Runtime(rowToDef(byId.get(workflowId)!)))
+      })
+    } catch (err) {
+      this.handleError('_createBatchOrNone', err, { ids })
     }
   }
 

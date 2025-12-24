@@ -1,8 +1,9 @@
 import { ListOptions, ListResult } from '@mini-math/utils'
 import z from 'zod'
 import { WorkflowStore } from './workflowStore.js'
-import { WorkflowCoreType } from './types.js'
+import { WorkflowCoreType, WorkflowRefType } from './types.js'
 import { v4 as uuidv4 } from 'uuid'
+import { RuntimeStore } from '@mini-math/runtime'
 /**
  * A "batch" groups multiple workflow ids under a single batchId.
  * batchId is owned (multi-tenant) via `owner`.
@@ -18,6 +19,7 @@ export abstract class BatchStore {
   private initialized = false
 
   abstract workflowStore: WorkflowStore
+  abstract runtimeStore: RuntimeStore
 
   /** Called exactly once before any operation. */
   protected async ensureInitialized(): Promise<void> {
@@ -32,7 +34,7 @@ export abstract class BatchStore {
     owner: string,
     batchId: string,
     workflowCores: WorkflowCoreType[],
-  ): Promise<boolean> {
+  ): Promise<WorkflowRefType[]> {
     await this.ensureInitialized()
     const createRequest = []
 
@@ -46,11 +48,25 @@ export abstract class BatchStore {
     }
 
     const workflowCreateResult = await this.workflowStore.createBatchOrNone(createRequest)
-    if (workflowCreateResult.length == workflowCores.length) {
-      return this._create(owner, batchId, workflowCores)
+    const runtimeCreateResult = await this.runtimeStore.createBatchOrNone(
+      workflowCreateResult.map((a) => {
+        return {
+          workflowId: a.id,
+        }
+      }),
+    )
+    const batchNoteResult = await this._create(owner, batchId, workflowCores)
+
+    if (batchNoteResult) {
+      if (
+        workflowCreateResult.length == workflowCores.length &&
+        runtimeCreateResult.length == workflowCores.length
+      ) {
+        return workflowCreateResult.map((a) => a.id)
+      }
     }
 
-    return false
+    return []
   }
 
   /** Get workflow ids for a batch. */
@@ -88,9 +104,9 @@ export abstract class BatchStore {
   }
 
   /** List batches (implementation can support filtering/sorting via ListOptions). */
-  public async list(options?: ListOptions): Promise<ListResult<WorkflowBatchType>> {
+  public async list(owner: string, options?: ListOptions): Promise<ListResult<WorkflowBatchType>> {
     await this.ensureInitialized()
-    return this._list(options)
+    return this._list(owner, options)
   }
 
   /** Count batches for an owner. */
@@ -115,7 +131,10 @@ export abstract class BatchStore {
 
   protected abstract _delete(owner: string, batchId: string): Promise<boolean>
 
-  protected abstract _list(options?: ListOptions): Promise<ListResult<WorkflowBatchType>>
+  protected abstract _list(
+    owner: string,
+    options?: ListOptions,
+  ): Promise<ListResult<WorkflowBatchType>>
 
   protected abstract _count(owner: string): Promise<number>
 }

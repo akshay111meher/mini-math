@@ -30,7 +30,7 @@ export class PostgresWorkflowstore extends WorkflowStore {
   constructor(postgresUrl: string, loggerName: string = 'PostgresWorkflowStore') {
     super()
     this.postgresUrl = postgresUrl
-    this.logger = makeLogger('PostgresWorkflowStore')
+    this.logger = makeLogger(loggerName)
   }
 
   private handleError(method: string, err: unknown, context?: Record<string, unknown>): never {

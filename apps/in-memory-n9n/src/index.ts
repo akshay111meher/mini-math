@@ -24,7 +24,7 @@ const roleStore = new InMemoryRoleStore(INIT_PLATFORM_OWNER)
 const imageStore = new InMemoryImageStore()
 const userStore = new InMemoryUserStore()
 const cdpAccountStore = new InMemoryCdpStore()
-const batchStore = new InMemoryBatchStore(workflowStore)
+const batchStore = new InMemoryBatchStore(workflowStore, runtimeStore)
 
 for (let i = 1; i <= 10; i++) {
   const worker = new RemoteWorker(

@@ -46,6 +46,13 @@ export abstract class RuntimeStore {
     return this._create(workflowId, initial)
   }
 
+  public async createBatchOrNone(
+    batch: { workflowId: string; initial?: Partial<RuntimeDef> }[],
+  ): Promise<Runtime[]> {
+    await this.ensureInitialized()
+    return this._createBatchOrNone(batch)
+  }
+
   /** Get the runtime instance for workflowId. */
   public async get(workflowId: string): Promise<Runtime> {
     await this.ensureInitialized()
@@ -104,6 +111,10 @@ export abstract class RuntimeStore {
   protected abstract initialize(): Promise<void>
 
   protected abstract _create(workflowId: string, initial?: Partial<RuntimeDef>): Promise<Runtime>
+
+  protected abstract _createBatchOrNone(
+    batch: { workflowId: string; initial?: Partial<RuntimeDef> }[],
+  ): Promise<Runtime[]>
 
   protected abstract _get(workflowId: string): Promise<Runtime>
 
