@@ -11,6 +11,7 @@ import { main as main10 } from './10_credits.js'
 import { main as main11 } from './11_feHelpers.js'
 import { main as main12 } from './12_batch.js'
 import { main as main13 } from './13_error_node.js'
+import { main as main14 } from './14_custom_wf.js'
 
 // This is not right way to test, but comment out tests you don't want
 async function main() {
@@ -27,6 +28,7 @@ async function main() {
   await main11()
   await main12()
   await main13()
+  await main14()
 
   return 'Done'
 }
