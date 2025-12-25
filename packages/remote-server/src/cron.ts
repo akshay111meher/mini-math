@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { IQueue } from '@mini-math/queue'
 import { NodeFactoryType } from '@mini-math/compiler'
 import { CommonSchemas } from './schemas/index.js'
+import { allLimit } from '@mini-math/utils'
 
 export function handleCronJob(
   workflowStore: WorkflowStore,
@@ -71,6 +72,8 @@ export function handleCronJob(
       })
     }
 
+    const allWorkflowCalls = []
+    const allRuntimeCalls = []
     for (let index = 0; index < runtimePayloads.length; index++) {
       const runtimePayload = runtimePayloads[index]
       const workflowPayload = workflowPayloads[index]
@@ -100,23 +103,30 @@ export function handleCronJob(
           message: 'cron jobs with external inputs are not supported right now',
         })
       }
+
       if (Object.keys(options).length > 0) {
-        await workflowStore.create(
-          workflowPayload.id,
-          workflowPayload.workflowCore,
-          workflowPayload.user,
-          options,
+        allWorkflowCalls.push(() =>
+          workflowStore.create(
+            workflowPayload.id,
+            workflowPayload.workflowCore,
+            workflowPayload.user,
+            options,
+          ),
         )
       } else {
-        await workflowStore.create(
-          workflowPayload.id,
-          workflowPayload.workflowCore,
-          workflowPayload.user,
+        allWorkflowCalls.push(() =>
+          workflowStore.create(
+            workflowPayload.id,
+            workflowPayload.workflowCore,
+            workflowPayload.user,
+          ),
         )
       }
 
-      await runtimeStore.create(runtimePayload.id)
+      allRuntimeCalls.push(() => runtimeStore.create(runtimePayload.id))
     }
+
+    await Promise.all([allLimit(allWorkflowCalls, 5), allLimit(allRuntimeCalls, 5)])
 
     const firstWorkflowId = workflowPayloads[0].id
     const { startAt } = cronJobDescription.intervalSchedule
