@@ -95,19 +95,35 @@ export async function main() {
 
   const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
+  type FetchResult = {
+    status: string
+    result: unknown
+  }
+
   while (true) {
-    const workflow_fetch_result = await client.post<{ status: string }>('/fetch', {
+    const workflow_fetch_result = await client.post<FetchResult>('/fetch', {
       id: workflow_load_result.data.id,
     })
-    const { status } = workflow_fetch_result.data
-    console.log('workflow_fetch_result', {
-      workflowId: workflow_load_result.data.id,
-      status,
-      time: new Date().valueOf(),
-    })
+
+    const { status, result } = workflow_fetch_result.data
+
+    console.log(
+      'workflow_fetch_result',
+      JSON.stringify(
+        {
+          workflowId: workflow_load_result.data.id,
+          status,
+          workflow_trace: result,
+          time: Date.now(),
+        },
+        null,
+        4,
+      ),
+    )
+
     await sleep(1000)
 
-    if (status === 'finished' || status == 'terminated') break
+    if (status === 'finished' || status === 'terminated') break
   }
 
   console.log('logout:', (await client.post('/logout')).data)

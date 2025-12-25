@@ -4,6 +4,7 @@ import {
   ClockInsufficientCredit,
   ClockOk,
   ClockTerminated,
+  ClockWaitingInput,
   ExpectingInputForType,
   Workflow,
   WorkflowRefType,
@@ -172,9 +173,7 @@ export class RemoteWorker {
       }
 
       if (info.status == 'terminated') {
-        this.logger.error(
-          `Terminated Workflow ${workflow.id()} being tried to clock. This should not occur`,
-        )
+        this.logger.error(`Terminated Workflow ${workflow.id()} being tried to clock`)
 
         await this.handleTerminatedWorkflow(workflow, wfId, messageId, info)
         return
@@ -233,17 +232,17 @@ export class RemoteWorker {
     workflow: Workflow,
     wfId: WorkflowRefType,
     messageId: string,
-    info: { status: string; expectingInputFor: ExpectingInputForType },
+    clockAwaitingInput: ClockWaitingInput,
   ): Promise<void> {
     this.logger.trace(
-      `Workflow ID: ${wfId} has been paused, expecting input: ${JSON.stringify(info)}`,
+      `Workflow ID: ${wfId} has been paused, expecting input: ${JSON.stringify(clockAwaitingInput)}`,
     )
 
     const existingTrace = workflow.trace() || []
 
     const updateResult = await this.workflowStore.update(workflow.id(), {
-      expectingInputFor: info.expectingInputFor,
-      trace: [...existingTrace, info],
+      expectingInputFor: clockAwaitingInput.expectingInputFor,
+      trace: [...existingTrace, clockAwaitingInput],
     })
     this.logger.trace(JSON.stringify(updateResult))
 
@@ -258,7 +257,7 @@ export class RemoteWorker {
       await this.sendWebhook(workflow.id(), {
         url: webhookUrl,
         eventType: 'awaiting-input',
-        payload: { wfId: workflow.id(), info },
+        payload: { wfId: workflow.id(), clockAwaitingInput },
         secret: this.webhookSecret,
         timeoutMs: this.webhookTimeoutInMs,
       })
@@ -274,11 +273,15 @@ export class RemoteWorker {
     this.logger.trace(
       `Workflow ${wfId} errored, marking as complete for cleanup. Terminated with clockResult: ${JSON.stringify(clockResult)}`,
     )
+
+    const existingTrace = workflow.trace() || []
+
     const result = await this.workflowStore.update(wfId, {
       inProgress: false,
       isInitiated: false,
       isTerminated: true,
       lock: undefined,
+      trace: [...existingTrace, clockResult],
     })
     this.logger.trace(JSON.stringify(result))
 

@@ -249,6 +249,7 @@ export const fetch: RouteConfig = {
           schema: z.object({
             status: z.enum(['inProgress', 'initiated', 'awaitingInput', 'idle', 'terminated']),
             expectingInputFor: ExpectingInputFor.optional(),
+            result: WorkflowCore.optional(),
           }),
         },
       },

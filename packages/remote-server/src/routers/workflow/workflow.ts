@@ -111,7 +111,7 @@ export function create(
     }
 
     if (workflow.isTerminated()) {
-      return res.status(422).json({ status: 'terminated', result: wfDef })
+      return res.status(206).json({ status: 'terminated', result: wfDef })
     }
 
     const expectingInputFor = workflow.expectingInputFor()
