@@ -17,6 +17,7 @@ import { CdpTransactionNode } from './CdpTransaction.js'
 import { TransferFundsNode } from './TransferFunds.js'
 import { TestNode } from './Test.js'
 import { CoinGekkoNode } from './CoinGekko.js'
+import { OneInchNode } from './OneInch.js'
 import { CdpSignNode } from './CdpSign.js'
 
 export interface NodeFactoryType {
@@ -61,6 +62,8 @@ export class NodeFactory implements NodeFactoryType {
       return new TestNode(node, workflowGlobalStateRef, this.factory)
     } else if (node.type == NodeType.coingeckoFetchPrice) {
       return new CoinGekkoNode(node, workflowGlobalStateRef, this.factory)
+    } else if (node.type == NodeType.oneInchFusion) {
+      return new OneInchNode(node, workflowGlobalStateRef, this.factory)
     } else if (node.type == NodeType.cdpSign) {
       return new CdpSignNode(node, workflowGlobalStateRef, this.factory)
     } else if (node.type == NodeType.decimalWallet) {

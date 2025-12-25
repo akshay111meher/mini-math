@@ -7,3 +7,5 @@ export * as SecretRouter from './secrets/index.js'
 export * as ImageRouter from './image/index.js'
 export * as FeHelperRouter from './feHelpers/index.js'
 export * as BatchJobRouter from './batch/index.js'
+
+export * as OneInchRouter from './1inch/index.js'

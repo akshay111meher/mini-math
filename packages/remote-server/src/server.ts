@@ -37,6 +37,7 @@ import {
   WorkflowRouter,
   FeHelperRouter,
   BatchJobRouter,
+  OneInchRouter,
 } from './routers/index.js'
 
 import { openapiDoc } from './swagger/index.js'
@@ -211,5 +212,6 @@ export class Server {
       BatchJobRouter.basePath,
       BatchJobRouter.create(this.batchStore, this.queue, this.logger),
     )
+    this.app.use(OneInchRouter.basePath, OneInchRouter.create())
   }
 }

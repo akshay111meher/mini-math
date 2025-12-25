@@ -1,20 +1,19 @@
 import { Router, RequestHandler } from 'express'
 import { requireAuth } from '../../middlewares/auth.js'
 import { cdpService, parseNetwork } from './cdp.js'
-import { keccak256, toUtf8Bytes, concat } from 'ethers'
+import { createHash } from 'crypto'
 import { CdpAccountStore } from '@mini-math/secrets'
 import { ListOptions } from '@mini-math/utils'
 import { UserStore } from '@mini-math/rbac'
 
-export { doc, basePath } from './swagger.js'
-
-export function accountNameIdentifier(authenticatonAddress: string, accountName: string): string {
-  authenticatonAddress = authenticatonAddress.toLowerCase()
-  const hAuth = keccak256(toUtf8Bytes(authenticatonAddress.trim().toLowerCase()))
-  const hName = keccak256(toUtf8Bytes(accountName.trim()))
-
-  return keccak256(concat([hAuth, hName]))
+export function accountNameV1(address: string): string {
+  const normalized = address.trim().toLowerCase()
+  const digest = createHash('sha256').update(normalized).digest('hex')
+  const base = digest.slice(0, 24)
+  return `${base}00`
 }
+
+export { doc, basePath } from './swagger.js'
 
 export function create(
   cdpAccountStore: CdpAccountStore,
@@ -26,39 +25,43 @@ export function create(
   router.use(requireAuth())
   router.post('/account', mustHaveMinCdpAccountCredits(1), async (req, res, next) => {
     try {
-      const { accountName } = req.body as { accountName?: string }
-      if (!accountName)
-        return res.status(400).json({ success: false, error: 'accountName is required' })
+      const userAddress = req.user.address
+      const derivedAccountName = userAddress
 
-      const exists = await cdpAccountStore.exists(req.user.address, accountName)
+      const exists = await cdpAccountStore.exists(userAddress, derivedAccountName)
 
-      const account = await cdpService.createOrGetAccount(
-        accountNameIdentifier(req.user.address, accountName),
-      )
+      const accountName = accountNameV1(userAddress)
+      const account = await cdpService.createOrGetAccount(accountName)
 
       if (!exists) {
         // then deduct credits for creation
-        await userStore.adjustCredits(req.user.address, { cdpAccountCredits: -1 })
+        await userStore.adjustCredits(userAddress, { cdpAccountCredits: -1 })
       }
 
-      await cdpAccountStore.store(req.user.address, accountName)
+      await cdpAccountStore.store(userAddress, derivedAccountName)
       return res.json({ success: true, data: account })
     } catch (err) {
       next(err)
     }
   })
 
-  router.get('/account/:accountName', async (req, res, next) => {
+  router.get('/account', async (req, res, next) => {
     try {
-      const { accountName } = req.params
-      const exists = cdpAccountStore.exists(req.user.address, accountName)
-      if (!exists) {
-        return res.json({ success: true, data: null, exists: false })
+      const userAddress = req.user.address
+      const derivedAccountName = userAddress
+      const accountName = accountNameV1(userAddress)
+      const account = await cdpService.getAccount(accountName)
+      const exists = !!account
+
+      // If Coinbase has an account but our local store does not, backfill it.
+      if (exists) {
+        const localExists = await cdpAccountStore.exists(userAddress, derivedAccountName)
+        if (!localExists) {
+          await cdpAccountStore.store(userAddress, derivedAccountName)
+        }
       }
-      const account = await cdpService.getAccount(
-        accountNameIdentifier(req.user.address, accountName),
-      )
-      return res.json({ success: true, data: account, exists: !!account })
+
+      return res.json({ success: true, data: account, exists })
     } catch (err) {
       next(err)
     }
@@ -66,16 +69,34 @@ export function create(
 
   router.get('/token-balances', async (req, res, next) => {
     try {
-      const { address, network, pageSize, pageToken } = req.query
-      if (!address || !network)
-        return res.status(400).json({ success: false, error: 'address and network are required' })
-      const balances = await cdpService.listTokenBalances(
-        address as string,
-        parseNetwork(network),
-        pageSize ? Number(pageSize) : undefined,
-        pageToken as string | undefined,
-      )
-      return res.json({ success: true, data: balances })
+      const { network, pageSize, pageToken } = req.query
+      if (!network) return res.status(400).json({ success: false, error: 'network is required' })
+
+      const userAddress = req.user.address
+      const derivedAccountName = userAddress
+
+      try {
+        const accountName = accountNameV1(derivedAccountName)
+        const account = await cdpService.getAccount(accountName)
+        if (!account) {
+          return res
+            .status(404)
+            .json({ success: false, error: 'CDP account not found for this user' })
+        }
+
+        const parsedNetwork = parseNetwork(network)
+
+        const balances = await cdpService.listTokenBalances(
+          account.address,
+          parsedNetwork,
+          pageSize ? Number(pageSize) : undefined,
+          pageToken as string | undefined,
+        )
+        return res.json({ success: true, data: balances })
+      } catch (err) {
+        const message = (err as Error).message || 'failed to fetch token balances'
+        return res.status(400).json({ success: false, error: message })
+      }
     } catch (err) {
       next(err)
     }
@@ -83,17 +104,23 @@ export function create(
 
   router.post('/faucet', async (req, res, next) => {
     try {
-      const {
-        address,
-        network = 'base-sepolia',
-        token = 'eth',
-      } = req.body as {
-        address?: string
+      const { network = 'base-sepolia', token = 'eth' } = req.body as {
         network?: string
         token?: string
       }
-      if (!address) return res.status(400).json({ success: false, error: 'address is required' })
-      const faucet = await cdpService.requestFaucet(address, network, token)
+
+      const userAddress = req.user.address
+      const derivedAccountName = userAddress
+
+      const accountName = accountNameV1(derivedAccountName)
+      const account = await cdpService.getAccount(accountName)
+      if (!account) {
+        return res
+          .status(404)
+          .json({ success: false, error: 'CDP account not found for this user' })
+      }
+
+      const faucet = await cdpService.requestFaucet(account.address, network, token)
       return res.json({ success: true, data: faucet })
     } catch (err) {
       next(err)
@@ -102,11 +129,11 @@ export function create(
 
   router.post('/export-account', async (req, res, next) => {
     try {
-      const { accountName } = req.body as { accountName: string }
-      if (!accountName)
-        return res.status(400).json({ success: false, error: 'accountName is required' })
+      const userAddress = req.user.address
+      const derivedAccountName = userAddress
+      const accountName = accountNameV1(derivedAccountName)
       const result = await cdpService.exportAccount({
-        accountName: accountNameIdentifier(req.user.address, accountName),
+        accountName,
       })
       return res.json({ success: true, data: result })
     } catch (err) {

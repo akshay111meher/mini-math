@@ -28,13 +28,14 @@ export enum NodeType {
   decimalWallet = 'decimalWallet',
   decimalTransaction = 'decimalTransaction',
   eip712Sign = 'eip712Sign',
+  oneInchFusion = 'oneInchFusion',
 }
 
 export const ExecutionTimestamp = z.number().int().nonnegative().brand<'UnixEpochMs'>()
 export const NodeDef = z
   .object({
     id: NodeRef,
-    type: z.enum(NodeType),
+    type: z.nativeEnum(NodeType),
     name: z.string().optional(),
     config: z.unknown().optional(),
     data: z.unknown().optional(),

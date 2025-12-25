@@ -1,5 +1,5 @@
 import { ListOptions, ListResult } from '@mini-math/utils'
-import { WorkflowCoreType, WorkflowRefType } from './types.js'
+import { WorkflowRefType } from './types.js'
 import { WorkflowStore } from './workflowStore.js'
 import { BatchStore, WorkflowBatchType } from './batchStore.js' // adjust path
 import { RuntimeStore } from '@mini-math/runtime'
@@ -8,19 +8,23 @@ type BatchKey = string // `${owner}:${batchId}`
 const keyOf = (owner: string, batchId: string): BatchKey => `${owner}:${batchId}`
 
 function applyListOptions<T>(items: T[], options?: ListOptions): ListResult<T> {
-  const anyOpts = (options ?? {}) as any
-  const skip = typeof anyOpts.skip === 'number' ? anyOpts.skip : 0
-  const limit = typeof anyOpts.limit === 'number' ? anyOpts.limit : items.length
+  const limit = options?.limit ?? items.length
 
-  const total = items.length
-  const page = items.slice(skip, skip + limit)
+  const page = items.slice(0, limit)
 
-  return {
-    items: page,
-    total,
-    ...(typeof anyOpts.skip === 'number' ? { skip } : {}),
-    ...(typeof anyOpts.limit === 'number' ? { limit } : {}),
-  } as any
+  // Cursor semantics: if the caller didn’t ask for cursor paging, don’t emit one.
+  // If they did, emit a nextCursor only when there are more items.
+  const wantsCursorPaging = options?.cursor !== undefined || options?.limit !== undefined
+  const hasMore = items.length > limit
+
+  const result: ListResult<T> = { items: page }
+
+  if (wantsCursorPaging && hasMore) {
+    // simplest opaque cursor: offset as string (you can swap to base64, etc.)
+    result.nextCursor = String(limit)
+  }
+
+  return result
 }
 
 export class InMemoryBatchStore extends BatchStore {

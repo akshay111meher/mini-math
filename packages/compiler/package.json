@@ -30,12 +30,13 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@coinbase/cdp-sdk": "^1.36.0",
     "@mini-math/logger": "^0.1.0",
     "@mini-math/nodes": "^0.1.0",
+    "dotenv": "^16.6.1",
     "uuid": "^13.0.0",
-    "@coinbase/cdp-sdk": "^1.36.0",
     "viem": "^2.33.2",
-    "dotenv": "^16.6.1"
+    "zod": "^4.2.1"
   },
   "devDependencies": {
     "@types/node": "^22.7.5",

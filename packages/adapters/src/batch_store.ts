@@ -1,5 +1,5 @@
 // packages/adapters/src/stores/postgresBatchStore.ts
-import { eq, and, sql, inArray } from 'drizzle-orm'
+import { eq, and, sql } from 'drizzle-orm'
 import type { ListOptions, ListResult } from '@mini-math/utils'
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
@@ -10,7 +10,6 @@ import {
   BatchStore,
   type WorkflowBatchType,
   WorkflowStore,
-  WorkflowCoreType,
   WorkflowRefType,
 } from '@mini-math/workflow'
 
