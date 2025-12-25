@@ -65,7 +65,7 @@ export async function main() {
     data: { batchId: string; workflowIds: string[] }
   }>('/batchJobs/createBatch', {
     workflowCore: demo_workflow,
-    schedulesInMs: [1000, 10000, 25000],
+    schedulesInMs: [1000, 10000, 25000, 100, 10, 15000, 100],
   })
   console.log('batchJobCreateRequest:', batchJobCreateRequest.data)
 
@@ -103,4 +103,14 @@ export async function main() {
     },
   )
   console.log('getBatch:', getBatch.data)
+
+  const listBatches = await client.post('/batchJobs/listBatches', {
+    limit: 100,
+  })
+  console.log('listBatches:', JSON.stringify(listBatches.data, null, 2))
+
+  const deleteBatch = await client.post<{ status: boolean }>('/batchJobs/deleteBatch', {
+    batchId: batchJobCreateRequest.data.data.batchId,
+  })
+  console.log('deleteBatch:', deleteBatch.data)
 }

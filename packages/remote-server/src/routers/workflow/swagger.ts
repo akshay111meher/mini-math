@@ -2,7 +2,7 @@ import { RouteConfig } from '@asteasolutions/zod-to-openapi'
 import { ExpectingInputFor, WorkflowCore, WorkflowSchema } from '@mini-math/workflow'
 import { CommonSchemas, CRON, VALIDATE, WORKFLOW } from '../../schemas/index.js'
 import z from 'zod'
-import { ListOptionsSchema } from '@mini-math/utils'
+import { ListOptionsSchema, makeListResultSchema } from '@mini-math/utils'
 
 export const validate: RouteConfig = {
   method: 'post',
@@ -321,7 +321,13 @@ export const listWorkflows: RouteConfig = {
   responses: {
     200: {
       description: 'Status of the image',
-      content: { 'application/json': { schema: CommonSchemas.StandardResponse } },
+      content: {
+        'application/json': {
+          schema: CommonSchemas.StandardResponse.extend({
+            data: makeListResultSchema(WorkflowSchema),
+          }),
+        },
+      },
     },
   },
   security: [{ cookieAuth: [] }],

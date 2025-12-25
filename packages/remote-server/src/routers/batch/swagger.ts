@@ -1,6 +1,7 @@
 import { RouteConfig } from '@asteasolutions/zod-to-openapi'
 import { BatchSchemas, CommonSchemas } from '../../schemas/index.js'
-import { ListOptionsSchema } from '@mini-math/utils'
+import { ListOptionsSchema, makeListResultSchema } from '@mini-math/utils'
+import { WorkflowRef } from '@mini-math/workflow'
 
 export const BATCH_JOBS = 'Batch Jobs'
 export const basePath = '/batchJobs'
@@ -183,7 +184,7 @@ that were created under the batch, depending on server-side behavior.
   security: [{ cookieAuth: [] }],
 }
 
-export const listWorkflows: RouteConfig = {
+export const listBatches: RouteConfig = {
   method: 'post',
   path: `${basePath}/listBatches`,
   tags: [BATCH_JOBS],
@@ -200,10 +201,16 @@ export const listWorkflows: RouteConfig = {
   responses: {
     200: {
       description: 'Status of the image',
-      content: { 'application/json': { schema: CommonSchemas.StandardResponse } },
+      content: {
+        'application/json': {
+          schema: CommonSchemas.StandardResponse.extend({
+            data: makeListResultSchema(WorkflowRef),
+          }),
+        },
+      },
     },
   },
   security: [{ cookieAuth: [] }],
 }
 
-export const doc: RouteConfig[] = [createBatch, existsBatch, getBatch, deleteBatch]
+export const doc: RouteConfig[] = [createBatch, existsBatch, getBatch, deleteBatch, listBatches]

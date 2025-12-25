@@ -1,4 +1,4 @@
-import { ListOptions, ListResult } from '@mini-math/utils'
+import { allLimit, ListOptions, ListResult } from '@mini-math/utils'
 import z from 'zod'
 import { WorkflowStore } from './workflowStore.js'
 import { WorkflowCoreType, WorkflowRefType } from './types.js'
@@ -99,10 +99,14 @@ export abstract class BatchStore {
     await this.ensureInitialized()
     const flows = await this._get(owner, batchId)
     if (flows) {
+      const calls = []
       for (let index = 0; index < flows.length; index++) {
         const element = flows[index]
-        await this.workflowStore.delete(element)
+        calls.push(() => this.workflowStore.delete(element))
+        calls.push(() => this.runtimeStore.delete(element))
       }
+
+      await allLimit(calls, 5)
     }
     return this._delete(owner, batchId)
   }
