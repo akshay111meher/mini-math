@@ -140,7 +140,7 @@ export class PostgresRuntimeStore extends RuntimeStore {
       })
 
       if (!row) {
-        throw new Error(`Runtime for workflow ${workflowId} not found`)
+        return undefined
       }
 
       const def = rowToDef(row)
@@ -182,7 +182,7 @@ export class PostgresRuntimeStore extends RuntimeStore {
         .returning()
 
       if (!row) {
-        throw new Error(`Runtime for workflow ${workflowId} not found`)
+        return undefined
       }
 
       const def = rowToDef(row)
@@ -243,14 +243,14 @@ export class PostgresRuntimeStore extends RuntimeStore {
     }
   }
 
-  protected async _snapshot(workflowId: string): Promise<RuntimeDef> {
+  protected async _snapshot(workflowId: string): Promise<RuntimeDef | undefined> {
     try {
       const row = await this.db.query.runtimes.findFirst({
         where: eq(runtimes.id, workflowId),
       })
 
       if (!row) {
-        throw new Error(`Runtime for workflow ${workflowId} not found`)
+        return undefined
       }
 
       return rowToDef(row)
