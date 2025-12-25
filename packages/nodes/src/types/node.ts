@@ -29,6 +29,7 @@ export enum NodeType {
   decimalTransaction = 'decimalTransaction',
   eip712Sign = 'eip712Sign',
   oneInchFusion = 'oneInchFusion',
+  error = 'error',
 }
 
 export const ExecutionTimestamp = z.number().int().nonnegative().brand<'UnixEpochMs'>()

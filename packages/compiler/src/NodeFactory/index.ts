@@ -19,6 +19,7 @@ import { TestNode } from './Test.js'
 import { CoinGekkoNode } from './CoinGekko.js'
 import { OneInchNode } from './OneInch.js'
 import { CdpSignNode } from './CdpSign.js'
+import { ErrorNode } from './Error.js'
 
 export interface NodeFactoryType {
   make(node: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState): ExecutableNodeBase
@@ -72,6 +73,8 @@ export class NodeFactory implements NodeFactoryType {
       return new CdpTransactionNode(node, workflowGlobalStateRef, this.factory)
     } else if (node.type == NodeType.eip712Sign) {
       return new CdpSignNode(node, workflowGlobalStateRef, this.factory)
+    } else if (node.type === NodeType.error) {
+      return new ErrorNode(node, workflowGlobalStateRef, this.factory, 'ErrorNode')
     }
     throw new Error('node.type not defined')
   }
