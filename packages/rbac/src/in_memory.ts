@@ -7,7 +7,7 @@ export class InMemoryRoleStore extends RoleStore {
   constructor(initPlatformOwner: string) {
     super()
     this.rolesByUser = new Map()
-    this._addRoleImpl(initPlatformOwner, Role.PlatformOwner)
+    this._addRoleImpl(initPlatformOwner.toLowerCase(), Role.PlatformOwner)
   }
   private rolesByUser = new Map<string, Set<Role>>()
 
@@ -16,40 +16,42 @@ export class InMemoryRoleStore extends RoleStore {
   }
 
   protected async _getRolesImpl(userId: string): Promise<Role[]> {
-    const set = this.rolesByUser.get(userId)
+    const set = this.rolesByUser.get(userId.toLowerCase())
     return set ? Array.from(set) : []
   }
 
   protected async _setRolesImpl(userId: string, roles: Role[]): Promise<void> {
-    this.rolesByUser.set(userId, new Set(roles))
+    this.rolesByUser.set(userId.toLowerCase(), new Set(roles))
   }
 
   protected async _addRoleImpl(userId: string, role: Role): Promise<void> {
-    let set = this.rolesByUser.get(userId)
+    const normalizedUserId = userId.toLowerCase()
+    let set = this.rolesByUser.get(normalizedUserId)
     if (!set) {
       set = new Set<Role>()
-      this.rolesByUser.set(userId, set)
+      this.rolesByUser.set(normalizedUserId, set)
     }
     set.add(role)
   }
 
   protected async _removeRoleImpl(userId: string, role: Role): Promise<void> {
-    const set = this.rolesByUser.get(userId)
+    const normalizedUserId = userId.toLowerCase()
+    const set = this.rolesByUser.get(normalizedUserId)
     if (!set) return
 
     set.delete(role)
     if (set.size === 0) {
-      this.rolesByUser.delete(userId)
+      this.rolesByUser.delete(normalizedUserId)
     }
   }
 
   protected async _hasRoleImpl(userId: string, role: Role): Promise<boolean> {
-    const set = this.rolesByUser.get(userId)
+    const set = this.rolesByUser.get(userId.toLowerCase())
     return set ? set.has(role) : false
   }
 
   protected async _clearRolesImpl(userId: string): Promise<void> {
-    this.rolesByUser.delete(userId)
+    this.rolesByUser.delete(userId.toLowerCase())
   }
 }
 
