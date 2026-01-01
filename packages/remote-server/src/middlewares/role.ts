@@ -1,6 +1,7 @@
 import { Role, RoleStore } from '@mini-math/rbac'
 import type { RequestHandler } from 'express'
 import { SessionUser } from '../routers/auth/auth.js'
+import { getAddress } from 'viem'
 
 import { makeLogger } from '@mini-math/logger'
 const logger = makeLogger('role-middlwares')
@@ -23,15 +24,18 @@ export const revertIfNoRole =
       }
 
       try {
-        const allRoles = await roleStore.getRoles(user.address)
+        const normalizedAddress = getAddress(user.address)
+        const allRoles = await roleStore.getRoles(normalizedAddress)
 
-        for (let index = 0; index < roles.length; index++) {
-          const role = allRoles[index]
-          if (allRoles.includes(role)) {
+        for (const requiredRole of roles) {
+          if (allRoles.includes(requiredRole)) {
+            logger.trace(`User ${normalizedAddress} has required role ${requiredRole}`)
             return next()
           }
         }
-        logger.info(`User ${user} has no role ${allRoles}, reverting`)
+        logger.info(
+          `User ${normalizedAddress} has roles [${allRoles.join(', ')}] but needs one of [${roles.join(', ')}], reverting`,
+        )
         return res.status(403).json({ success: false, message: 'forbidden for role' })
       } catch (err) {
         logger.error(`Error while fetching roles for user ${user}: ${(err as Error).message}`)

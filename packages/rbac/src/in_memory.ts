@@ -1,13 +1,14 @@
 import { RoleStore } from './roleStore.js'
 import { Role } from './roles.js'
 import { UserStore, type UserRecord, type CreditDelta } from './userStore.js'
+import { getAddress } from 'viem'
 
 import { ListOptions, ListResult } from '@mini-math/utils'
 export class InMemoryRoleStore extends RoleStore {
   constructor(initPlatformOwner: string) {
     super()
     this.rolesByUser = new Map()
-    this._addRoleImpl(initPlatformOwner, Role.PlatformOwner)
+    this._addRoleImpl(getAddress(initPlatformOwner), Role.PlatformOwner)
   }
   private rolesByUser = new Map<string, Set<Role>>()
 
@@ -16,40 +17,42 @@ export class InMemoryRoleStore extends RoleStore {
   }
 
   protected async _getRolesImpl(userId: string): Promise<Role[]> {
-    const set = this.rolesByUser.get(userId)
+    const set = this.rolesByUser.get(getAddress(userId))
     return set ? Array.from(set) : []
   }
 
   protected async _setRolesImpl(userId: string, roles: Role[]): Promise<void> {
-    this.rolesByUser.set(userId, new Set(roles))
+    this.rolesByUser.set(getAddress(userId), new Set(roles))
   }
 
   protected async _addRoleImpl(userId: string, role: Role): Promise<void> {
-    let set = this.rolesByUser.get(userId)
+    const normalizedUserId = getAddress(userId)
+    let set = this.rolesByUser.get(normalizedUserId)
     if (!set) {
       set = new Set<Role>()
-      this.rolesByUser.set(userId, set)
+      this.rolesByUser.set(normalizedUserId, set)
     }
     set.add(role)
   }
 
   protected async _removeRoleImpl(userId: string, role: Role): Promise<void> {
-    const set = this.rolesByUser.get(userId)
+    const normalizedUserId = getAddress(userId)
+    const set = this.rolesByUser.get(normalizedUserId)
     if (!set) return
 
     set.delete(role)
     if (set.size === 0) {
-      this.rolesByUser.delete(userId)
+      this.rolesByUser.delete(normalizedUserId)
     }
   }
 
   protected async _hasRoleImpl(userId: string, role: Role): Promise<boolean> {
-    const set = this.rolesByUser.get(userId)
+    const set = this.rolesByUser.get(getAddress(userId))
     return set ? set.has(role) : false
   }
 
   protected async _clearRolesImpl(userId: string): Promise<void> {
-    this.rolesByUser.delete(userId)
+    this.rolesByUser.delete(getAddress(userId))
   }
 }
 
