@@ -5,7 +5,6 @@ import {
   ClockOk,
   ClockTerminated,
   ClockWaitingInput,
-  ExpectingInputForType,
   Workflow,
   WorkflowRefType,
   WorkflowStore,
