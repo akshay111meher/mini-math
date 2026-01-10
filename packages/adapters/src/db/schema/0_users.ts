@@ -1,12 +1,24 @@
-import { pgTable, text, integer, primaryKey } from 'drizzle-orm/pg-core'
+import { pgTable, text, integer, primaryKey, index } from 'drizzle-orm/pg-core'
 
 export const users = pgTable(
   'users',
   {
     userId: text('userId').notNull(),
-    storageCredits: integer('storageCredits').notNull().default(0),
-    executionCredits: integer('executionCredits').notNull().default(0),
+
+    evm_payment_address: text('evm_payment_address').notNull(),
+
+    unifiedCredits: integer('unifiedCredits').notNull().default(0),
+
     cdpAccountCredits: integer('cdpAccountCredits').notNull().default(0),
   },
-  (table) => [primaryKey({ columns: [table.userId], name: 'users_pk' })],
+  (table) => [
+    // Composite primary key
+    primaryKey({
+      columns: [table.userId, table.evm_payment_address],
+      name: 'users_pk',
+    }),
+
+    // Fast lookups by payment address
+    index('users_evm_payment_address_idx').on(table.evm_payment_address),
+  ],
 )

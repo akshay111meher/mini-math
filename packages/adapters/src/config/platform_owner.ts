@@ -1,4 +1,5 @@
 import { makeLogger } from '@mini-math/logger'
+import { EvmPaymentAddressResolver, makePaymentResolver } from '@mini-math/rbac'
 const logger = makeLogger('platformOwnerConfig')
 
 export function getInitPlatformOwner(): string {
@@ -7,4 +8,14 @@ export function getInitPlatformOwner(): string {
   logger.trace(`platform_owner: ${platform_owner}`)
 
   return platform_owner
+}
+
+export function getPaymentResolver(): EvmPaymentAddressResolver {
+  if (!process.env.PAYMENT_KEY_DERIVATATION_SEED) {
+    console.log('PAYMENT_KEY_DERIVATATION_SEED not defined')
+    process.exit(1)
+  }
+
+  const seed = process.env.PAYMENT_KEY_DERIVATATION_SEED
+  return makePaymentResolver(seed)
 }

@@ -3,7 +3,13 @@ import { ImageStore } from '@mini-math/images'
 import { UserStore } from '@mini-math/rbac'
 import { ImageSchemas } from '../../../schemas/index.js'
 
-export function handleStoreImage(imageStore: ImageStore, userStore: UserStore): RequestHandler {
+export function handleStoreImage(
+  imageStore: ImageStore,
+  userStore: UserStore,
+  storageCreditCost: number,
+): RequestHandler {
+  // ensure it is positive
+  storageCreditCost = Math.abs(storageCreditCost)
   return async (req, res, next) => {
     try {
       const userAddress = req.user.address
@@ -39,7 +45,9 @@ export function handleStoreImage(imageStore: ImageStore, userStore: UserStore): 
         })
       }
 
-      const creditsUpdated = await userStore.adjustCredits(userAddress, { storageCredits: -1 })
+      const creditsUpdated = await userStore.adjustCredits(userAddress, {
+        unifiedCredits: -storageCreditCost,
+      })
 
       return res.status(201).json({
         success: true,
@@ -47,7 +55,7 @@ export function handleStoreImage(imageStore: ImageStore, userStore: UserStore): 
         data: {
           owner: userAddress,
           workflowName: storeImagePayload.workflowName,
-          storageCreditsRemaining: creditsUpdated.storageCredits,
+          storageCreditsRemaining: creditsUpdated.unifiedCredits,
         },
       })
     } catch (err) {

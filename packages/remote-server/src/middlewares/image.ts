@@ -24,7 +24,7 @@ export const revertIfNoMinimumStorageCredits =
             .json({ success: false, message: `User: ${user.address} not found` })
         }
 
-        if (userData.storageCredits && userData.storageCredits >= minCredits) {
+        if (userData.unifiedCredits && userData.unifiedCredits >= minCredits) {
           return next()
         }
         return res

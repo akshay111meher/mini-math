@@ -4,6 +4,7 @@ import { CookieJar } from 'tough-cookie'
 import { wrapper } from 'axios-cookiejar-support'
 import { SiweMessage } from 'siwe'
 import { config } from 'dotenv'
+import { GrantCreditDeltaSchemaType } from '@mini-math/rbac'
 
 config()
 
@@ -156,10 +157,12 @@ export async function main() {
   })
   console.log('grant_role', grant_role.data)
 
-  const grantPositiveCredits = await client.post('/grantCredits', {
-    executionCredits: 10000,
+  const grantCreditPayload: GrantCreditDeltaSchemaType = {
+    unifiedCredits: 10000,
     userId: wallet.address,
-  })
+  }
+
+  const grantPositiveCredits = await client.post('/grantCredits', grantCreditPayload)
   console.log(grantPositiveCredits.data)
 
   const workflow_load_result = await client.post<{ id: string }>('/load', demo_workflow)

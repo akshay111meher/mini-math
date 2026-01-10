@@ -11,7 +11,7 @@ import {
   handleStoreImage,
   handleUpdateImage,
 } from './routes/index.js'
-import { ListOptionsSchema } from '@mini-math/utils'
+import { COST, ListOptionsSchema } from '@mini-math/utils'
 import { ImageSchemas } from '../../schemas/index.js'
 
 export { doc } from './swagger.js'
@@ -28,7 +28,7 @@ export function create(
     requireAuth(),
     mustHaveMinimumStorageCredits(1),
     validateBody(ImageSchemas.StoreWorkflowImageSchema),
-    handleStoreImage(imageStore, userStore),
+    handleStoreImage(imageStore, userStore, COST.IMAGE_STORAGE_COST_IN_CREDITS),
   )
 
   router.post(

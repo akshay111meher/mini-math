@@ -1,9 +1,10 @@
 CREATE TYPE "public"."role" AS ENUM('PlatformOwner', 'Developer');--> statement-breakpoint
 CREATE TABLE "users" (
 	"userId" text NOT NULL,
-	"storageCredits" integer DEFAULT 0,
-	"executionCredits" integer DEFAULT 0,
-	CONSTRAINT "users_pk" PRIMARY KEY("userId")
+	"evm_payment_address" text NOT NULL,
+	"unifiedCredits" integer DEFAULT 0 NOT NULL,
+	"cdpAccountCredits" integer DEFAULT 0 NOT NULL,
+	CONSTRAINT "users_pk" PRIMARY KEY("userId","evm_payment_address")
 );
 --> statement-breakpoint
 CREATE TABLE "user_roles" (
@@ -35,9 +36,12 @@ CREATE TABLE "workflows" (
 	"edges" jsonb NOT NULL,
 	"entry" jsonb NOT NULL,
 	"global_state" jsonb DEFAULT null,
+	"trace" jsonb DEFAULT null,
+	"webhook_url" text,
 	"lock" jsonb DEFAULT null,
 	"in_progress" boolean DEFAULT false NOT NULL,
 	"is_initiated" boolean DEFAULT false NOT NULL,
+	"is_terminated" boolean DEFAULT false NOT NULL,
 	"expectingInputFor" jsonb DEFAULT null,
 	"externalInputStorage" jsonb DEFAULT null,
 	"previous_linked_workflow" text,
@@ -54,7 +58,27 @@ CREATE TABLE "workflow_images" (
 	CONSTRAINT "workflow_images_pk" PRIMARY KEY("owner_id","workflow_name")
 );
 --> statement-breakpoint
-ALTER TABLE "workflow_images" ADD CONSTRAINT "workflow_images_owner_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."users"("userId") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE TABLE "cdp_accounts" (
+	"user_id" text NOT NULL,
+	"account_name" text NOT NULL,
+	CONSTRAINT "cdp_accounts_user_id_account_name_pk" PRIMARY KEY("user_id","account_name")
+);
+--> statement-breakpoint
+CREATE TABLE "workflow_batch_workflows" (
+	"owner" varchar(128) NOT NULL,
+	"batch_id" varchar(128) NOT NULL,
+	"workflow_id" text NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "workflow_batches" (
+	"owner" varchar(128) NOT NULL,
+	"batch_id" varchar(128) NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE INDEX "users_evm_payment_address_idx" ON "users" USING btree ("evm_payment_address");--> statement-breakpoint
 CREATE INDEX "user_roles_user_id_idx" ON "user_roles" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "secrets_user_id_idx" ON "secrets" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "secrets_secret_identifier_idx" ON "secrets" USING btree ("secret_identifier");--> statement-breakpoint
@@ -65,4 +89,10 @@ CREATE INDEX "workflows_owner_idx" ON "workflows" USING btree ("owner");--> stat
 CREATE INDEX "workflows_prev_linked_idx" ON "workflows" USING btree ("previous_linked_workflow");--> statement-breakpoint
 CREATE INDEX "workflows_next_linked_idx" ON "workflows" USING btree ("next_linked_workflow");--> statement-breakpoint
 CREATE INDEX "workflow_images_owner_idx" ON "workflow_images" USING btree ("owner_id");--> statement-breakpoint
-CREATE INDEX "workflow_images_owner_workflow_idx" ON "workflow_images" USING btree ("owner_id","workflow_name");
+CREATE INDEX "workflow_images_owner_workflow_idx" ON "workflow_images" USING btree ("owner_id","workflow_name");--> statement-breakpoint
+CREATE INDEX "cdp_account_user_id_idx" ON "cdp_accounts" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "workflow_batch_workflows_owner_batch_workflow_uq" ON "workflow_batch_workflows" USING btree ("owner","batch_id","workflow_id");--> statement-breakpoint
+CREATE INDEX "workflow_batch_workflows_owner_batch_idx" ON "workflow_batch_workflows" USING btree ("owner","batch_id");--> statement-breakpoint
+CREATE INDEX "workflow_batch_workflows_workflow_id_idx" ON "workflow_batch_workflows" USING btree ("workflow_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "workflow_batches_owner_batch_id_uq" ON "workflow_batches" USING btree ("owner","batch_id");--> statement-breakpoint
+CREATE INDEX "workflow_batches_owner_idx" ON "workflow_batches" USING btree ("owner");

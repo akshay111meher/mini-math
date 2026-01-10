@@ -17,9 +17,21 @@ import {
   PostgresBatchStore,
 } from '@mini-math/adapters'
 
+import { makePaymentResolver } from '@mini-math/rbac'
+
 import { config } from 'dotenv'
 
 config()
+
+const DOMAIN = process.env.DOMAIN!
+const SIWE_DOMAIN = process.env.SIWE_DOMAIN!
+const ETHERSCAN_APIKEY = process.env.ETHERSCAN_APIKEY!
+
+if (!process.env.PAYMENT_KEY_DERIVATATION_SEED) {
+  console.log('PAYMENT_KEY_DERIVATATION_SEED not defined')
+}
+
+const PAYMENT_KEY_DERIVATATION_SEED = process.env.PAYMENT_KEY_DERIVATATION_SEED!
 
 const nodeFactory = new NodeFactory()
 const queue = new RabbitMQQueue<WorkflowRefType>(
@@ -38,7 +50,11 @@ const roleStore = new PostgresRoleStore(
 const sessionStore = new RedisStore(adapterConfig.getRedisUrl())
 const secretStore = new PostgresSecretStore(adapterConfig.getPostgresUrl())
 const imageStore = new PostgresImageStore(adapterConfig.getPostgresUrl())
-const userStore = new PostgresUserStore(adapterConfig.getPostgresUrl())
+
+const userStore = new PostgresUserStore(
+  adapterConfig.getPostgresUrl(),
+  makePaymentResolver(PAYMENT_KEY_DERIVATATION_SEED),
+)
 const cdpAccountStore = new PostgresCdpAccountStore(adapterConfig.getPostgresUrl())
 const batchStore = new PostgresBatchStore(adapterConfig.getPostgresUrl())
 
@@ -61,10 +77,6 @@ const batchStore = new PostgresBatchStore(adapterConfig.getPostgresUrl())
 //   'Simple Worker 2',
 // )
 // worker2.start()
-
-const DOMAIN = process.env.DOMAIN!
-const SIWE_DOMAIN = process.env.SIWE_DOMAIN!
-const ETHERSCAN_APIKEY = process.env.ETHERSCAN_APIKEY!
 
 const server = new Server(
   workflowStore,

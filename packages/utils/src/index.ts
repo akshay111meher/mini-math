@@ -8,6 +8,10 @@ export const WORKFLOW_CONSTANTS = {
   MAX_EXECUTION_UNITS_PER_CLOCK: 10000,
 }
 
+export const COST = {
+  IMAGE_STORAGE_COST_IN_CREDITS: 10,
+}
+
 export const deepClone = <T>(x: T): T => {
   // Use native deep clone when available
   try {

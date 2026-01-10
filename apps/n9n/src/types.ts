@@ -45,7 +45,10 @@ const roleStore = new PostgresRoleStore(
 const secretStore = new PostgresSecretStore(adapterConfig.getPostgresUrl())
 const sessionStore = new RedisStore(adapterConfig.getRedisUrl())
 const imageStore = new PostgresImageStore(adapterConfig.getPostgresUrl())
-const userStore = new PostgresUserStore(adapterConfig.getPostgresUrl())
+const userStore = new PostgresUserStore(
+  adapterConfig.getPostgresUrl(),
+  adapterConfig.getPaymentResolver(),
+)
 const cdpAccountStore = new PostgresCdpAccountStore(adapterConfig.getPostgresUrl())
 const batchStore = new PostgresBatchStore(adapterConfig.getPostgresUrl())
 

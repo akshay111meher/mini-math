@@ -57,79 +57,117 @@ export class InMemoryRoleStore extends RoleStore {
 }
 
 export class InMemoryUserStore extends UserStore {
+  // Keyed by composite PK: (userId, evm_payment_address)
   private store = new Map<string, UserRecord>()
+
+  constructor() {
+    // Derivation: "address" is just userId (as you requested)
+    super((userId) => userId)
+  }
 
   protected async initialize(): Promise<void> {
     // nothing to do
   }
 
-  protected async _create(userId: string, delta?: CreditDelta): Promise<boolean> {
-    if (this.store.has(userId)) return false
+  private key(userId: string, evm_payment_address: string): string {
+    return `${userId}|${evm_payment_address}`
+  }
 
-    this.store.set(userId, {
+  protected async _create(
+    userId: string,
+    evm_payment_address: string,
+    delta?: CreditDelta,
+  ): Promise<boolean> {
+    const k = this.key(userId, evm_payment_address)
+    if (this.store.has(k)) return false
+
+    this.store.set(k, {
       userId,
-      storageCredits: delta?.storageCredits || 0,
-      executionCredits: delta?.executionCredits || 0,
-      cdpAccountCredits: delta?.cdpAccountCredits || 0,
+      evm_payment_address,
+      unifiedCredits: delta?.unifiedCredits ?? 0,
+      cdpAccountCredits: delta?.cdpAccountCredits ?? 0,
     })
 
     return true
   }
 
-  protected async _get(userId: string): Promise<UserRecord | undefined> {
-    const u = this.store.get(userId)
+  protected async _get(
+    userId: string,
+    evm_payment_address: string,
+  ): Promise<UserRecord | undefined> {
+    const u = this.store.get(this.key(userId, evm_payment_address))
     return u ? { ...u } : undefined
   }
 
   protected async _upsert(
     userId: string,
-    patch: Partial<Omit<UserRecord, 'userId'>>,
+    evm_payment_address: string,
+    patch: Partial<Omit<UserRecord, 'userId' | 'evm_payment_address'>>,
   ): Promise<UserRecord> {
-    const existing = this.store.get(userId) ?? {
-      userId,
-      storageCredits: 0,
-      executionCredits: 0,
-      cdpAccountCredits: 0,
-    }
+    const k = this.key(userId, evm_payment_address)
 
+    const existing =
+      this.store.get(k) ??
+      ({
+        userId,
+        evm_payment_address,
+        unifiedCredits: 0,
+        cdpAccountCredits: 0,
+      } satisfies UserRecord)
+
+    // Patch only touches credit fields; keep keys fixed.
     const updated: UserRecord = {
-      ...existing,
-      ...patch,
+      userId,
+      evm_payment_address,
+      unifiedCredits: patch.unifiedCredits ?? existing.unifiedCredits,
+      cdpAccountCredits: patch.cdpAccountCredits ?? existing.cdpAccountCredits,
     }
 
-    this.store.set(userId, updated)
+    this.store.set(k, updated)
     return { ...updated }
   }
 
-  protected async _adjustCredits(userId: string, delta: CreditDelta): Promise<UserRecord> {
-    const existing = this.store.get(userId) ?? {
-      userId,
-      storageCredits: 0,
-      executionCredits: 0,
-      cdpAccountCredits: 0,
-    }
+  protected async _adjustCredits(
+    userId: string,
+    evm_payment_address: string,
+    delta: CreditDelta,
+  ): Promise<UserRecord> {
+    const k = this.key(userId, evm_payment_address)
+
+    const existing =
+      this.store.get(k) ??
+      ({
+        userId,
+        evm_payment_address,
+        unifiedCredits: 0,
+        cdpAccountCredits: 0,
+      } satisfies UserRecord)
+
+    const dUnified = delta.unifiedCredits ?? 0
+    const dCdp = delta.cdpAccountCredits ?? 0
 
     const updated: UserRecord = {
       userId,
-      storageCredits: existing.storageCredits + (delta.storageCredits ?? 0),
-      executionCredits: existing.executionCredits + (delta.executionCredits ?? 0),
-      cdpAccountCredits: existing.cdpAccountCredits + (delta.cdpAccountCredits ?? 0),
+      evm_payment_address,
+      unifiedCredits: existing.unifiedCredits + dUnified,
+      cdpAccountCredits: existing.cdpAccountCredits + dCdp,
     }
 
-    this.store.set(userId, updated)
+    this.store.set(k, updated)
     return { ...updated }
   }
 
-  protected async _exists(userId: string): Promise<boolean> {
-    return this.store.has(userId)
+  protected async _exists(userId: string, evm_payment_address: string): Promise<boolean> {
+    return this.store.has(this.key(userId, evm_payment_address))
   }
 
-  protected async _delete(userId: string): Promise<boolean> {
-    return this.store.delete(userId)
+  protected async _delete(userId: string, evm_payment_address: string): Promise<boolean> {
+    return this.store.delete(this.key(userId, evm_payment_address))
   }
 
   protected async _list(options?: ListOptions): Promise<ListResult<UserRecord>> {
     const all = Array.from(this.store.values())
+
     const cursor = options?.cursor ? Number.parseInt(options.cursor, 10) || 0 : 0
     const limit = options?.limit ?? all.length
 
@@ -138,5 +176,15 @@ export class InMemoryUserStore extends UserStore {
     const nextCursor = nextIndex < all.length ? String(nextIndex) : undefined
 
     return { items, nextCursor }
+  }
+
+  protected async _getByPaymentAddress(
+    evm_payment_address: string,
+  ): Promise<UserRecord | undefined> {
+    // Linear scan is fine for in-memory; DB will use the index.
+    for (const u of this.store.values()) {
+      if (u.evm_payment_address === evm_payment_address) return { ...u }
+    }
+    return undefined
   }
 }

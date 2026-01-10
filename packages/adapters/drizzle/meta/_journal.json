@@ -5,50 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1765016674245,
-      "tag": "0000_fair_jack_power",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1765096776813,
-      "tag": "0001_sour_goliath",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1765550873346,
-      "tag": "0002_hesitant_the_hood",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1765619138093,
-      "tag": "0003_amazing_dakota_north",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1765834872795,
-      "tag": "0004_organic_puppet_master",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1766356918398,
-      "tag": "0005_brief_cammi",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1766618370011,
-      "tag": "0006_fat_rumiko_fujikawa",
+      "when": 1768082188533,
+      "tag": "0000_goofy_wolverine",
       "breakpoints": true
     }
   ]

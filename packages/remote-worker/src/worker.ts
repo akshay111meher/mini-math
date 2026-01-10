@@ -137,7 +137,7 @@ export class RemoteWorker {
 
       const userData = await this.userStore.get(workflow.owner())
       this.logger.trace(`User Credits: ${JSON.stringify(userData)}`)
-      const credits = BigInt(userData?.executionCredits ?? 0)
+      const credits = BigInt(userData?.unifiedCredits ?? 0)
       const info = await workflow.clock(credits)
       this.logger.trace(`Clocked workflow: ${workflow.id()}`)
       this.logger.trace(JSON.stringify(info))
@@ -219,7 +219,7 @@ export class RemoteWorker {
 
     const result2 = await Promise.all([
       this.userStore.adjustCredits(workflow.owner(), {
-        executionCredits: -clockOkResult.executionInfo.creditsConsumed,
+        unifiedCredits: -clockOkResult.executionInfo.creditsConsumed,
       }),
       this.root_workflow_queue.enqueue(wfId, this.workerClockTime),
       this.root_workflow_queue.ack(messageId),

@@ -1,9 +1,16 @@
-import { eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import type { ListOptions, ListResult } from '@mini-math/utils'
 import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 
-import { UserStore, type UserRecord, type CreditDelta } from '@mini-math/rbac'
+import {
+  UserStore,
+  type UserRecord,
+  type CreditDelta,
+  type EvmPaymentAddressResolver,
+  EvmPaymentAddressSchema,
+} from '@mini-math/rbac'
+
 import { users } from './db/schema/0_users'
 import * as schema from './db/schema/0_users.js'
 import { makeLogger, Logger } from '@mini-math/logger'
@@ -14,11 +21,10 @@ export class PostgresUserStore extends UserStore {
   private db!: Db
   private pool!: Pool
   private logger: Logger
-
   private readonly postgresUrl: string
 
-  constructor(postgresUrl: string) {
-    super()
+  constructor(postgresUrl: string, resolveEvmPaymentAddress: EvmPaymentAddressResolver) {
+    super(resolveEvmPaymentAddress)
     this.postgresUrl = postgresUrl
     this.logger = makeLogger('PostgresUserStore')
   }
@@ -37,17 +43,8 @@ export class PostgresUserStore extends UserStore {
   protected async initialize(): Promise<void> {
     try {
       this.logger.debug('Initializing')
-      // 1. Create PG pool
-      this.pool = new Pool({
-        connectionString: this.postgresUrl,
-      })
-
-      // 2. Wrap pool in Drizzle
-      this.db = drizzle(this.pool, {
-        schema,
-      })
-
-      // 3. Optional sanity check – ensure DB is reachable
+      this.pool = new Pool({ connectionString: this.postgresUrl })
+      this.db = drizzle(this.pool, { schema })
       await this.db.execute(sql`select 1`)
       this.logger.info('initialized successfully')
     } catch (err) {
@@ -55,184 +52,247 @@ export class PostgresUserStore extends UserStore {
     }
   }
 
-  protected async _create(userId: string, delta?: CreditDelta): Promise<boolean> {
-    const res = await this.db
-      .insert(users)
-      .values({
-        userId,
-        storageCredits: delta?.storageCredits || 0,
-        executionCredits: delta?.executionCredits || 0,
-        cdpAccountCredits: delta?.cdpAccountCredits || 0,
-      })
-      .onConflictDoNothing()
-      .returning({ userId: users.userId })
+  protected async _create(
+    userId: string,
+    evm_payment_address: string,
+    delta?: CreditDelta,
+  ): Promise<boolean> {
+    try {
+      const addr = EvmPaymentAddressSchema.parse(evm_payment_address)
 
-    return res.length > 0
+      const res = await this.db
+        .insert(users)
+        .values({
+          userId,
+          evm_payment_address: addr,
+          unifiedCredits: delta?.unifiedCredits ?? 0,
+          cdpAccountCredits: delta?.cdpAccountCredits ?? 0,
+        })
+        .onConflictDoNothing()
+        .returning({ userId: users.userId, evm_payment_address: users.evm_payment_address })
+
+      return res.length > 0
+    } catch (err) {
+      this.handleError('_create', err, { userId, evm_payment_address })
+    }
   }
 
-  protected async _get(userId: string): Promise<UserRecord | undefined> {
-    const [row] = await this.db
-      .select({
-        userId: users.userId,
-        storageCredits: users.storageCredits,
-        executionCredits: users.executionCredits,
-        cdpAccountCredits: users.cdpAccountCredits,
-      })
-      .from(users)
-      .where(eq(users.userId, userId))
-      .limit(1)
+  protected async _get(
+    userId: string,
+    evm_payment_address: string,
+  ): Promise<UserRecord | undefined> {
+    try {
+      const addr = EvmPaymentAddressSchema.parse(evm_payment_address)
 
-    if (!row) return undefined
+      const [row] = await this.db
+        .select({
+          userId: users.userId,
+          evm_payment_address: users.evm_payment_address,
+          unifiedCredits: users.unifiedCredits,
+          cdpAccountCredits: users.cdpAccountCredits,
+        })
+        .from(users)
+        .where(and(eq(users.userId, userId), eq(users.evm_payment_address, addr)))
+        .limit(1)
 
-    return {
-      userId: row.userId,
-      storageCredits: row.storageCredits ?? 0,
-      executionCredits: row.executionCredits ?? 0,
-      cdpAccountCredits: row.cdpAccountCredits ?? 0,
+      if (!row) return undefined
+
+      return {
+        userId: row.userId,
+        evm_payment_address: row.evm_payment_address,
+        unifiedCredits: row.unifiedCredits ?? 0,
+        cdpAccountCredits: row.cdpAccountCredits ?? 0,
+      } as UserRecord
+    } catch (err) {
+      this.handleError('_get', err, { userId, evm_payment_address })
     }
   }
 
   protected async _upsert(
     userId: string,
-    patch: Partial<Omit<UserRecord, 'userId'>>,
+    evm_payment_address: string,
+    patch: Partial<Omit<UserRecord, 'userId' | 'evm_payment_address'>>,
   ): Promise<UserRecord> {
-    // Try update first
-    const existing = await this._get(userId)
+    try {
+      const addr = EvmPaymentAddressSchema.parse(evm_payment_address)
 
-    if (!existing) {
-      // create new
-      const created: UserRecord = {
+      const insertValues = {
         userId,
-        storageCredits: patch.storageCredits ?? 0,
-        executionCredits: patch.executionCredits ?? 0,
+        evm_payment_address: addr,
+        unifiedCredits: patch.unifiedCredits ?? 0,
         cdpAccountCredits: patch.cdpAccountCredits ?? 0,
       }
 
-      await this.db
+      const [row] = await this.db
+        .insert(users)
+        .values(insertValues)
+        .onConflictDoUpdate({
+          target: [users.userId, users.evm_payment_address],
+          set: {
+            unifiedCredits:
+              patch.unifiedCredits === undefined
+                ? users.unifiedCredits
+                : sql`excluded."unifiedCredits"`,
+            cdpAccountCredits:
+              patch.cdpAccountCredits === undefined
+                ? users.cdpAccountCredits
+                : sql`excluded."cdpAccountCredits"`,
+          },
+        })
+        .returning({
+          userId: users.userId,
+          evm_payment_address: users.evm_payment_address,
+          unifiedCredits: users.unifiedCredits,
+          cdpAccountCredits: users.cdpAccountCredits,
+        })
+
+      return {
+        userId: row!.userId,
+        evm_payment_address: row!.evm_payment_address,
+        unifiedCredits: row!.unifiedCredits ?? 0,
+        cdpAccountCredits: row!.cdpAccountCredits ?? 0,
+      } as UserRecord
+    } catch (err) {
+      this.handleError('_upsert', err, { userId, evm_payment_address, patch })
+    }
+  }
+
+  protected async _adjustCredits(
+    userId: string,
+    evm_payment_address: string,
+    delta: CreditDelta,
+  ): Promise<UserRecord> {
+    try {
+      const addr = EvmPaymentAddressSchema.parse(evm_payment_address)
+
+      const dUnified = delta.unifiedCredits ?? 0
+      const dCdp = delta.cdpAccountCredits ?? 0
+
+      const [row] = await this.db
         .insert(users)
         .values({
           userId,
-          storageCredits: created.storageCredits,
-          executionCredits: created.executionCredits,
-          cdpAccountCredits: created.cdpAccountCredits,
+          evm_payment_address: addr,
+          unifiedCredits: dUnified,
+          cdpAccountCredits: dCdp,
         })
         .onConflictDoUpdate({
-          target: users.userId,
+          target: [users.userId, users.evm_payment_address],
           set: {
-            storageCredits: sql`excluded."storageCredits"`,
-            executionCredits: sql`excluded."executionCredits"`,
-            cdpAccountCredits: sql`excluded."cdpAccountCredits"`,
+            unifiedCredits: sql`${users.unifiedCredits} + ${dUnified}`,
+            cdpAccountCredits: sql`${users.cdpAccountCredits} + ${dCdp}`,
           },
         })
+        .returning({
+          userId: users.userId,
+          evm_payment_address: users.evm_payment_address,
+          unifiedCredits: users.unifiedCredits,
+          cdpAccountCredits: users.cdpAccountCredits,
+        })
 
-      return created
-    }
-
-    const updated: UserRecord = {
-      userId,
-      storageCredits: patch.storageCredits ?? existing.storageCredits,
-      executionCredits: patch.executionCredits ?? existing.executionCredits,
-      cdpAccountCredits: patch.cdpAccountCredits ?? existing.cdpAccountCredits,
-    }
-
-    await this.db
-      .update(users)
-      .set({
-        storageCredits: updated.storageCredits,
-        executionCredits: updated.executionCredits,
-        cdpAccountCredits: updated.cdpAccountCredits,
-      })
-      .where(eq(users.userId, userId))
-
-    return updated
-  }
-
-  protected async _adjustCredits(userId: string, delta: CreditDelta): Promise<UserRecord> {
-    const dStorage = delta.storageCredits ?? 0
-    const dExec = delta.executionCredits ?? 0
-    const dCdp = delta.cdpAccountCredits ?? 0
-
-    const [row] = await this.db
-      .insert(users)
-      .values({
-        userId,
-        // if row doesn't exist yet, start from 0 + delta
-        storageCredits: dStorage,
-        executionCredits: dExec,
-        cdpAccountCredits: dCdp,
-      })
-      .onConflictDoUpdate({
-        target: users.userId,
-        set: {
-          // atomic increments/decrements
-          storageCredits: sql`${users.storageCredits} + ${dStorage}`,
-          executionCredits: sql`${users.executionCredits} + ${dExec}`,
-          cdpAccountCredits: sql`${users.cdpAccountCredits} + ${dCdp}`,
-        },
-      })
-      .returning({
-        userId: users.userId,
-        storageCredits: users.storageCredits,
-        executionCredits: users.executionCredits,
-        cdpAccountCredits: users.cdpAccountCredits,
-      })
-
-    // should always exist because insert/update returns a row
-    return {
-      userId: row!.userId,
-      storageCredits: row!.storageCredits,
-      executionCredits: row!.executionCredits,
-      cdpAccountCredits: row!.cdpAccountCredits,
+      return {
+        userId: row!.userId,
+        evm_payment_address: row!.evm_payment_address,
+        unifiedCredits: row!.unifiedCredits ?? 0,
+        cdpAccountCredits: row!.cdpAccountCredits ?? 0,
+      } as UserRecord
+    } catch (err) {
+      this.handleError('_adjustCredits', err, { userId, evm_payment_address, delta })
     }
   }
 
-  protected async _exists(userId: string): Promise<boolean> {
-    const [row] = await this.db
-      .select({ userId: users.userId })
-      .from(users)
-      .where(eq(users.userId, userId))
-      .limit(1)
+  protected async _exists(userId: string, evm_payment_address: string): Promise<boolean> {
+    try {
+      const addr = EvmPaymentAddressSchema.parse(evm_payment_address)
 
-    return !!row
+      const [row] = await this.db
+        .select({ userId: users.userId })
+        .from(users)
+        .where(and(eq(users.userId, userId), eq(users.evm_payment_address, addr)))
+        .limit(1)
+
+      return !!row
+    } catch (err) {
+      this.handleError('_exists', err, { userId, evm_payment_address })
+    }
   }
 
-  protected async _delete(userId: string): Promise<boolean> {
-    const res = await this.db
-      .delete(users)
-      .where(eq(users.userId, userId))
-      .returning({ userId: users.userId })
+  protected async _delete(userId: string, evm_payment_address: string): Promise<boolean> {
+    try {
+      const addr = EvmPaymentAddressSchema.parse(evm_payment_address)
 
-    return res.length > 0
+      const res = await this.db
+        .delete(users)
+        .where(and(eq(users.userId, userId), eq(users.evm_payment_address, addr)))
+        .returning({ userId: users.userId, evm_payment_address: users.evm_payment_address })
+
+      return res.length > 0
+    } catch (err) {
+      this.handleError('_delete', err, { userId, evm_payment_address })
+    }
   }
 
   protected async _list(options?: ListOptions): Promise<ListResult<UserRecord>> {
-    const cursor = options?.cursor ? Number.parseInt(options.cursor, 10) || 0 : 0
-    const limit = options?.limit ?? 50
+    try {
+      const cursor = options?.cursor ? Number.parseInt(options.cursor, 10) || 0 : 0
+      const limit = options?.limit ?? 50
 
-    const totalRows = await this.db.select({ value: sql<number>`count(*)` }).from(users)
+      const totalRows = await this.db.select({ value: sql<number>`count(*)` }).from(users)
+      const total = totalRows[0]?.value ?? 0
 
-    const total = totalRows[0]?.value ?? 0
+      const rows = await this.db
+        .select({
+          userId: users.userId,
+          evm_payment_address: users.evm_payment_address,
+          unifiedCredits: users.unifiedCredits,
+          cdpAccountCredits: users.cdpAccountCredits,
+        })
+        .from(users)
+        .orderBy(users.userId, users.evm_payment_address)
+        .offset(cursor)
+        .limit(limit)
 
-    const rows = await this.db
-      .select({
-        userId: users.userId,
-        storageCredits: users.storageCredits,
-        executionCredits: users.executionCredits,
-        cdpAccountCredits: users.cdpAccountCredits,
-      })
-      .from(users)
-      .offset(cursor)
-      .limit(limit)
+      const items: UserRecord[] = rows.map((r) => ({
+        userId: r.userId,
+        evm_payment_address: r.evm_payment_address,
+        unifiedCredits: r.unifiedCredits ?? 0,
+        cdpAccountCredits: r.cdpAccountCredits ?? 0,
+      })) as UserRecord[]
 
-    const items: UserRecord[] = rows.map((r) => ({
-      userId: r.userId,
-      storageCredits: r.storageCredits ?? 0,
-      executionCredits: r.executionCredits ?? 0,
-      cdpAccountCredits: r.cdpAccountCredits ?? 0,
-    }))
+      const nextCursor = cursor + limit < total ? String(cursor + limit) : undefined
+      return { items, nextCursor }
+    } catch (err) {
+      this.handleError('_list', err, { options })
+    }
+  }
 
-    const nextCursor = cursor + limit < total ? String(cursor + limit) : undefined
+  protected async _getByPaymentAddress(
+    evm_payment_address: string,
+  ): Promise<UserRecord | undefined> {
+    try {
+      const addr = EvmPaymentAddressSchema.parse(evm_payment_address)
 
-    return { items, nextCursor }
+      const [row] = await this.db
+        .select({
+          userId: users.userId,
+          evm_payment_address: users.evm_payment_address,
+          unifiedCredits: users.unifiedCredits,
+          cdpAccountCredits: users.cdpAccountCredits,
+        })
+        .from(users)
+        .where(eq(users.evm_payment_address, addr))
+        .limit(1)
+
+      if (!row) return undefined
+
+      return {
+        userId: row.userId,
+        evm_payment_address: row.evm_payment_address,
+        unifiedCredits: row.unifiedCredits ?? 0,
+        cdpAccountCredits: row.cdpAccountCredits ?? 0,
+      } as UserRecord
+    } catch (err) {
+      this.handleError('_getByPaymentAddress', err, { evm_payment_address })
+    }
   }
 }

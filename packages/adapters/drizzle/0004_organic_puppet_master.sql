@@ -1,1 +1,0 @@
-ALTER TABLE "workflows" ADD COLUMN "webhook_url" text;
