@@ -2,7 +2,8 @@ import { WorkflowCore } from '@mini-math/workflow'
 
 import z from 'zod'
 export const WorkflowNameSchema = z.object({
-  workflowName: z.string().max(16),
+  workflowName: z.string().max(225).optional(),
+  imageId: z.string().max(255),
 })
 export type WorkflowNameSchemaType = z.infer<typeof WorkflowNameSchema>
 

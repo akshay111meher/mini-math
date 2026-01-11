@@ -2,7 +2,11 @@ import { WorkflowCoreType, WorkflowCore } from '@mini-math/workflow'
 import { ListOptions, ListResult } from '@mini-math/utils'
 import z from 'zod'
 
-export const WorkflowImage = z.object({ workflowName: z.string(), image: WorkflowCore })
+export const WorkflowImage = z.object({
+  imageId: z.string(),
+  workflowName: z.string().optional(),
+  image: WorkflowCore,
+})
 export type WorkflowImageType = z.infer<typeof WorkflowImage>
 
 export abstract class ImageStore {
@@ -18,35 +22,37 @@ export abstract class ImageStore {
 
   public async create(
     owner: string,
-    workflowName: string,
+    imageId: string,
     core: WorkflowCoreType,
+    workflowName?: string,
   ): Promise<boolean> {
     await this.ensureInitialized()
-    return this._create(owner, workflowName, core)
+    return this._create(owner, imageId, core, workflowName)
   }
 
-  public async get(owner: string, workflowName: string): Promise<WorkflowCoreType | undefined> {
+  public async get(owner: string, imageId: string): Promise<WorkflowCoreType | undefined> {
     await this.ensureInitialized()
-    return this._get(owner, workflowName)
+    return this._get(owner, imageId)
   }
 
   public async update(
     owner: string,
-    workflowName: string,
+    imageId: string,
     patch: Partial<WorkflowCoreType>,
+    workflowName?: string,
   ): Promise<boolean> {
     await this.ensureInitialized()
-    return this._update(owner, workflowName, patch)
+    return this._update(owner, imageId, patch, workflowName)
   }
 
-  public async exists(owner: string, workflowName: string): Promise<boolean> {
+  public async exists(owner: string, imageId: string): Promise<boolean> {
     await this.ensureInitialized()
-    return this._exists(owner, workflowName)
+    return this._exists(owner, imageId)
   }
 
-  public async delete(owner: string, workflowName: string): Promise<boolean> {
+  public async delete(owner: string, imageId: string): Promise<boolean> {
     await this.ensureInitialized()
-    return this._delete(owner, workflowName)
+    return this._delete(owner, imageId)
   }
 
   public async list(options?: ListOptions): Promise<ListResult<WorkflowImageType>> {
@@ -63,24 +69,23 @@ export abstract class ImageStore {
 
   protected abstract _create(
     owner: string,
-    workflowName: string,
+    imageId: string,
     core: WorkflowCoreType,
+    workflowName?: string,
   ): Promise<boolean>
 
-  protected abstract _get(
-    owner: string,
-    workflowName: string,
-  ): Promise<WorkflowCoreType | undefined>
+  protected abstract _get(owner: string, imageId: string): Promise<WorkflowCoreType | undefined>
 
   protected abstract _update(
     owner: string,
-    workflowName: string,
+    imageId: string,
     patch: Partial<WorkflowCoreType>,
+    workflowName?: string,
   ): Promise<boolean>
 
-  protected abstract _exists(owner: string, workflowName: string): Promise<boolean>
+  protected abstract _exists(owner: string, imageId: string): Promise<boolean>
 
-  protected abstract _delete(owner: string, workflowName: string): Promise<boolean>
+  protected abstract _delete(owner: string, imageId: string): Promise<boolean>
 
   protected abstract _list(options?: ListOptions): Promise<ListResult<WorkflowImageType>>
 

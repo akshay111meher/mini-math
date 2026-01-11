@@ -7,16 +7,16 @@ export function handleImageExists(imageStore: ImageStore): RequestHandler {
     try {
       const userAddress = req.user.address
 
-      const { workflowName } = req.body as ImageSchemas.WorkflowNameSchemaType
+      const { imageId } = req.body as ImageSchemas.WorkflowNameSchemaType
 
-      const exists = await imageStore.exists(userAddress, workflowName)
+      const exists = await imageStore.exists(userAddress, imageId)
 
       return res.status(200).json({
         success: true,
         data: {
           exists,
           owner: userAddress,
-          workflowName,
+          imageId,
         },
       })
     } catch (err) {

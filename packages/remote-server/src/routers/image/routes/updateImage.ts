@@ -9,13 +9,13 @@ export function handleUpdateImage(imageStore: ImageStore): RequestHandler {
 
       const storeImagePayload = req.body as ImageSchemas.StoreWorkflowImageSchemaType
 
-      // Check if workflowName already exists for this user
-      const existingImage = await imageStore.get(userAddress, storeImagePayload.workflowName)
+      const existingImage = await imageStore.get(userAddress, storeImagePayload.imageId)
       if (existingImage) {
         const updated = await imageStore.update(
           userAddress,
-          storeImagePayload.workflowName,
+          storeImagePayload.imageId,
           storeImagePayload.core,
+          storeImagePayload.workflowName,
         )
         if (updated) {
           return res.status(201).json({
@@ -23,7 +23,7 @@ export function handleUpdateImage(imageStore: ImageStore): RequestHandler {
             message: 'workflow-image updated successfully',
             data: {
               owner: userAddress,
-              workflowName: storeImagePayload.workflowName,
+              imageId: storeImagePayload.imageId,
             },
           })
         } else {

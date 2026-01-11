@@ -18,7 +18,7 @@ export function handleStoreImage(
       const storeImagePayload = req.body as ImageSchemas.StoreWorkflowImageSchemaType
 
       // Check if workflowName already exists for this user
-      const existingImage = await imageStore.get(userAddress, storeImagePayload.workflowName)
+      const existingImage = await imageStore.get(userAddress, storeImagePayload.imageId)
       if (existingImage) {
         return res.status(409).json({
           success: false,
@@ -31,8 +31,9 @@ export function handleStoreImage(
 
       const created = await imageStore.create(
         userAddress,
-        storeImagePayload.workflowName,
+        storeImagePayload.imageId,
         storeImagePayload.core,
+        storeImagePayload.workflowName,
       )
 
       // If ImageStore uses a boolean return to signal "already existed" (race condition)

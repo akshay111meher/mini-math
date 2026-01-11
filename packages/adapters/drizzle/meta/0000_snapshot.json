@@ -1,5 +1,5 @@
 {
-  "id": "951172ca-006d-41d8-9aca-56753725a5de",
+  "id": "4e0f50ba-8e4e-42a7-8607-5b56a1280b1c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -56,7 +56,10 @@
       "compositePrimaryKeys": {
         "users_pk": {
           "name": "users_pk",
-          "columns": ["userId", "evm_payment_address"]
+          "columns": [
+            "userId",
+            "evm_payment_address"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -103,7 +106,10 @@
       "compositePrimaryKeys": {
         "user_roles_user_id_role_pk": {
           "name": "user_roles_user_id_role_pk",
-          "columns": ["user_id", "role"]
+          "columns": [
+            "user_id",
+            "role"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -170,7 +176,10 @@
       "compositePrimaryKeys": {
         "secrets_user_id_secret_identifier_pk": {
           "name": "secrets_user_id_secret_identifier_pk",
-          "columns": ["user_id", "secret_identifier"]
+          "columns": [
+            "user_id",
+            "secret_identifier"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -475,11 +484,17 @@
           "primaryKey": false,
           "notNull": true
         },
+        "image_id": {
+          "name": "image_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "workflow_name": {
           "name": "workflow_name",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "image": {
           "name": "image",
@@ -494,6 +509,27 @@
           "columns": [
             {
               "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "workflow_images_owner_image_idx": {
+          "name": "workflow_images_owner_image_idx",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "image_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -530,7 +566,10 @@
       "compositePrimaryKeys": {
         "workflow_images_pk": {
           "name": "workflow_images_pk",
-          "columns": ["owner_id", "workflow_name"]
+          "columns": [
+            "owner_id",
+            "image_id"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -576,7 +615,10 @@
       "compositePrimaryKeys": {
         "cdp_accounts_user_id_account_name_pk": {
           "name": "cdp_accounts_user_id_account_name_pk",
-          "columns": ["user_id", "account_name"]
+          "columns": [
+            "user_id",
+            "account_name"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -761,13 +803,349 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
+    },
+    "public.user_transactions": {
+      "name": "user_transactions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "idempotency_key": {
+          "name": "idempotency_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "direction": {
+          "name": "direction",
+          "type": "tx_direction",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "tx_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "asset_symbol": {
+          "name": "asset_symbol",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "asset_decimals": {
+          "name": "asset_decimals",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "asset_amount": {
+          "name": "asset_amount",
+          "type": "numeric(78, 0)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "memo": {
+          "name": "memo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "platform_ref_kind": {
+          "name": "platform_ref_kind",
+          "type": "platform_ref_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "platform_ref_id": {
+          "name": "platform_ref_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "evm_chain_id": {
+          "name": "evm_chain_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "evm_token_address": {
+          "name": "evm_token_address",
+          "type": "varchar(42)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "evm_tx_hash": {
+          "name": "evm_tx_hash",
+          "type": "varchar(66)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "evm_log_index": {
+          "name": "evm_log_index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "evm_from": {
+          "name": "evm_from",
+          "type": "varchar(42)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "evm_to": {
+          "name": "evm_to",
+          "type": "varchar(42)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "evm_block_number": {
+          "name": "evm_block_number",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "meta": {
+          "name": "meta",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "user_tx_user_id_idempo_uq": {
+          "name": "user_tx_user_id_idempo_uq",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "idempotency_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "user_tx_user_id_created_at_idx": {
+          "name": "user_tx_user_id_created_at_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "user_tx_source_idx": {
+          "name": "user_tx_source_idx",
+          "columns": [
+            {
+              "expression": "source",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "user_tx_direction_idx": {
+          "name": "user_tx_direction_idx",
+          "columns": [
+            {
+              "expression": "direction",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "user_tx_asset_idx": {
+          "name": "user_tx_asset_idx",
+          "columns": [
+            {
+              "expression": "asset_symbol",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "asset_decimals",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "user_tx_evm_lookup_idx": {
+          "name": "user_tx_evm_lookup_idx",
+          "columns": [
+            {
+              "expression": "evm_chain_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "evm_token_address",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "evm_tx_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "evm_log_index",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "user_tx_evm_uq": {
+          "name": "user_tx_evm_uq",
+          "columns": [
+            {
+              "expression": "evm_chain_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "evm_token_address",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "evm_tx_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "evm_log_index",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"user_transactions\".\"source\" = 'evm'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
   "enums": {
     "public.role": {
       "name": "role",
       "schema": "public",
-      "values": ["PlatformOwner", "Developer"]
+      "values": [
+        "PlatformOwner",
+        "Developer"
+      ]
+    },
+    "public.platform_ref_kind": {
+      "name": "platform_ref_kind",
+      "schema": "public",
+      "values": [
+        "admin_adjustment",
+        "reward",
+        "purchase",
+        "refund",
+        "other"
+      ]
+    },
+    "public.tx_direction": {
+      "name": "tx_direction",
+      "schema": "public",
+      "values": [
+        "credit",
+        "debit"
+      ]
+    },
+    "public.tx_source": {
+      "name": "tx_source",
+      "schema": "public",
+      "values": [
+        "platform",
+        "evm"
+      ]
     }
   },
   "schemas": {},

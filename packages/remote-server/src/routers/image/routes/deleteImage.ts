@@ -7,15 +7,15 @@ export function handleDeleteImage(imageStore: ImageStore): RequestHandler {
     try {
       const userAddress = req.user.address
 
-      const { workflowName } = req.body as ImageSchemas.WorkflowNameSchemaType
-      const deleted = await imageStore.delete(userAddress, workflowName)
+      const { imageId } = req.body as ImageSchemas.WorkflowNameSchemaType
+      const deleted = await imageStore.delete(userAddress, imageId)
 
       if (!deleted) {
         return res.status(404).json({
           success: false,
           error: {
             code: 'DELETE_FAILED',
-            message: `Workflow image '${workflowName}' not deleted for this user (ignore if no such image-name exists)`,
+            message: `Workflow imageId '${imageId}' not deleted for this user (ignore if no such image-name exists)`,
           },
         })
       }
@@ -23,7 +23,7 @@ export function handleDeleteImage(imageStore: ImageStore): RequestHandler {
       return res.status(202).json({
         success: true,
         message: 'workflow-image deleted successfully',
-        data: workflowName,
+        data: imageId,
       })
     } catch (err) {
       return next(err)
