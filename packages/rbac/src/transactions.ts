@@ -134,11 +134,8 @@ export abstract class UserTransactionStore {
       throw new TxValidationError("source must be 'platform' or 'evm'")
     }
 
-    if (tx.direction === 'credit' && tx.source !== 'platform') {
-      throw new TxValidationError("credits must have source='platform'")
-    }
-    if (tx.direction === 'debit' && tx.source !== 'evm') {
-      throw new TxValidationError("debits must have source='evm'")
+    if (tx.direction === 'debit' && tx.source !== 'platform') {
+      throw new TxValidationError("debits must have source='platform'")
     }
 
     if (!tx.asset?.symbol) throw new TxValidationError('asset.symbol is required')

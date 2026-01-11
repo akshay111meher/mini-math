@@ -39,7 +39,7 @@ export function create(
         await userStore.reduceCredits(
           userAddress,
           { cdpAccountCredits: 1 },
-          { memo: uuidv4(), meta: { for: 'cdp account opening' } },
+          { kind: 'other', refId: uuidv4(), meta: { for: 'cdp account opening' } },
         )
       }
 
