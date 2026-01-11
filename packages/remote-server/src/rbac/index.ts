@@ -68,8 +68,13 @@ export function handleIncreaseCredits(userStore: UserStore): RequestHandler {
 
     const result = await userStore.increaseCredits(
       payload.userId,
+      'platform',
       { ...payload },
-      { kind: 'admin_adjustment', memo: uuidv4() },
+      {
+        kind: 'admin_adjustment',
+        refId: uuidv4(),
+        memo: 'granted credit via admin',
+      },
     )
     if (result) {
       return res.status(200).json({ success: true, message: 'credits updated successfully' })

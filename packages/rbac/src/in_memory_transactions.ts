@@ -14,17 +14,6 @@ function now(): Date {
   return new Date()
 }
 
-function stableStringify(value: unknown): string {
-  if (value === null || value === undefined) return String(value)
-  if (typeof value !== 'object') return JSON.stringify(value)
-
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`
-
-  const obj = value as Record<string, unknown>
-  const keys = Object.keys(obj).sort()
-  return `{${keys.map((k) => `${JSON.stringify(k)}:${stableStringify(obj[k])}`).join(',')}}`
-}
-
 function normalizeAddress(addr: string): string {
   return addr.toLowerCase()
 }
@@ -49,8 +38,8 @@ function normalizeEvmRef(ref: EvmRef): EvmRef {
     tokenAddress: normalizeAddress(ref.tokenAddress),
     txHash: ref.txHash.toLowerCase(),
     logIndex: ref.logIndex ?? 0,
-    from: normalizeMaybeAddr((ref as any).from),
-    to: normalizeMaybeAddr((ref as any).to),
+    from: normalizeMaybeAddr(ref.from),
+    to: normalizeMaybeAddr(ref.to),
   } as EvmRef
 }
 

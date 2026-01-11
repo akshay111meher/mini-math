@@ -1,7 +1,7 @@
 import { ListOptions, ListResult } from '@mini-math/utils'
 import { z } from 'zod'
 import { Wallet, getAddress, solidityPackedKeccak256 } from 'ethers'
-import { UserTransactionStore } from './transactions.js'
+import { TxSource, UserTransactionStore } from './transactions.js'
 
 export const EvmPaymentAddressSchema = z
   .string()
@@ -111,6 +111,7 @@ export abstract class UserStore {
               refId: opts?.refId ?? `create:${userId}:unified`,
             },
             meta: opts?.meta,
+            source: 'platform',
           })
         }
 
@@ -128,6 +129,7 @@ export abstract class UserStore {
               refId: opts?.refId ?? `create:${userId}:cdp`,
             },
             meta: opts?.meta,
+            source: 'platform',
           })
         }
       }
@@ -153,6 +155,7 @@ export abstract class UserStore {
 
   public async increaseCredits(
     userId: string,
+    source: TxSource,
     delta: CreditDelta,
     opts?: AdjustCreditsOptions,
   ): Promise<UserRecord> {
@@ -186,6 +189,7 @@ export abstract class UserStore {
           memo,
           platformRef: { kind, refId: `${refBase}:unified` },
           meta,
+          source,
         })
       }
 
@@ -200,6 +204,7 @@ export abstract class UserStore {
           memo,
           platformRef: { kind, refId: `${refBase}:cdp` },
           meta,
+          source,
         })
       }
 
@@ -240,12 +245,7 @@ export abstract class UserStore {
             amount: toAmountString(u, 'unifiedCredits'),
           },
           memo,
-          evmRef: {
-            chainId: 0,
-            tokenAddress: '0x0000000000000000000000000000000000000000',
-            txHash: `0x${'0'.repeat(64)}`,
-            logIndex: 0,
-          },
+          platformRef: { kind, refId: `${refBase}:unified` },
           meta: { ...meta, kind, refId: `${refBase}:unified` },
         })
       }
@@ -259,12 +259,7 @@ export abstract class UserStore {
             amount: toAmountString(c, 'cdpAccountCredits'),
           },
           memo,
-          evmRef: {
-            chainId: 0,
-            tokenAddress: '0x0000000000000000000000000000000000000000',
-            txHash: `0x${'0'.repeat(64)}`,
-            logIndex: 0,
-          },
+          platformRef: { kind, refId: `${refBase}:cdp` },
           meta: { ...meta, kind, refId: `${refBase}:cdp` },
         })
       }

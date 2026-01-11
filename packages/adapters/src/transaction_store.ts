@@ -24,15 +24,6 @@ function normalizeAddress(addr: string): string {
   return addr.toLowerCase()
 }
 
-function stableStringify(value: unknown): string {
-  if (value === null || value === undefined) return String(value)
-  if (typeof value !== 'object') return JSON.stringify(value)
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`
-  const obj = value as Record<string, unknown>
-  const keys = Object.keys(obj).sort()
-  return `{${keys.map((k) => `${JSON.stringify(k)}:${stableStringify(obj[k])}`).join(',')}}`
-}
-
 function sameEvmRef(a: EvmRef, b: EvmRef): boolean {
   return (
     a.chainId === b.chainId &&
@@ -283,7 +274,7 @@ export class PostgresTransactionStore extends UserTransactionStore {
           isEvm && txInput.evmRef?.blockNumber !== undefined
             ? BigInt(txInput.evmRef.blockNumber)
             : null,
-        meta: (txInput.meta ?? null) as any,
+        meta: txInput.meta ?? null,
       }
 
       const inserted = await this.db

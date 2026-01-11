@@ -76,15 +76,10 @@ export interface BalanceView {
 }
 
 export abstract class UserTransactionStore {
-  public async credit(
-    input: Omit<CreateUserTx, 'direction' | 'source' | 'evmRef'> & {
-      platformRef: NonNullable<CreateUserTx['platformRef']>
-    },
-  ): Promise<UserTxRecord> {
+  public async credit(input: Omit<CreateUserTx, 'direction'>): Promise<UserTxRecord> {
     const tx: CreateUserTx = {
       ...input,
       direction: 'credit',
-      source: 'platform',
     }
     this.validateCreate(tx)
     const idempotencyKey = this.computeIdempotencyKey(tx)
@@ -92,14 +87,14 @@ export abstract class UserTransactionStore {
   }
 
   public async debit(
-    input: Omit<CreateUserTx, 'direction' | 'source' | 'platformRef'> & {
-      evmRef: NonNullable<CreateUserTx['evmRef']>
+    input: Omit<CreateUserTx, 'direction' | 'source' | 'evmRef'> & {
+      platformRef: NonNullable<CreateUserTx['platformRef']>
     },
   ): Promise<UserTxRecord> {
     const tx: CreateUserTx = {
       ...input,
       direction: 'debit',
-      source: 'evm',
+      source: 'platform',
     }
     this.validateCreate(tx)
     const idempotencyKey = this.computeIdempotencyKey(tx)
