@@ -20,7 +20,7 @@
   },
   "scripts": {
     "build:types": "tsc -p tsconfig.build.json",
-    "build:js": "tsup typechain-types/index.ts --format esm,cjs",
+    "build:js": "tsup typechain/index.ts --format esm,cjs",
     "build": "npm run clean && npm run build:types && npm run build:js",
     "clean": "rimraf dist",
     "test": "vitest run",

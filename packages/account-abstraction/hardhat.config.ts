@@ -1,6 +1,7 @@
 import 'hardhat/config'
 import '@nomicfoundation/hardhat-ethers'
 import '@nomicfoundation/hardhat-verify'
+import '@typechain/hardhat'
 
 import { config } from 'dotenv'
 config()
@@ -24,5 +25,9 @@ export default {
     etherscan: {
       apiKey: ETHERSCAN_API_KEY,
     },
+  },
+  typechain: {
+    outDir: 'typechain',
+    target: 'ethers-v6',
   },
 }
