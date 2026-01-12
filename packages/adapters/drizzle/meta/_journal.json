@@ -15,6 +15,13 @@
       "when": 1768252949978,
       "tag": "0001_loving_sharon_carter",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1768256853779,
+      "tag": "0002_organic_rocket_raccoon",
+      "breakpoints": true
     }
   ]
 }

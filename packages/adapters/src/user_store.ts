@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, sql, inArray } from 'drizzle-orm'
 import type { ListOptions, ListResult } from '@mini-math/utils'
 import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
@@ -361,7 +361,6 @@ export class PostgresUserStore extends UserStore {
     try {
       if (paymentAddresses.length === 0) return []
 
-      // validate + normalize (and dedupe to keep SQL smaller)
       const addrs = Array.from(
         new Set(paymentAddresses.map((a) => EvmPaymentAddressSchema.parse(a))),
       )
@@ -374,7 +373,7 @@ export class PostgresUserStore extends UserStore {
           cdpAccountCredits: users.cdpAccountCredits,
         })
         .from(users)
-        .where(sql`${users.evm_payment_address} = ANY(${addrs})`)
+        .where(inArray(users.evm_payment_address, addrs))
 
       return rows.map(
         (row) =>

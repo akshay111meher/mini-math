@@ -4,7 +4,12 @@ import { Command } from 'commander'
 
 const program = new Command()
 
-const VALID_COMMANDS = new Set(['start-server', 'start-worker'])
+const VALID_COMMANDS = new Set([
+  'start-server',
+  'start-worker',
+  'start-sepolia-payment-listener',
+  'start-payment-processor',
+])
 
 program.name('app').description('Tiny CLI to manage server and worker').version('0.1.0')
 
@@ -62,13 +67,22 @@ program
 program
   .command('start-sepolia-payment-listener')
   .description('Start Sepolia Payment Listener')
-  .requiredOption('--sepolia-rpc-url <SepoliaRpcUrl>', 'Sepolia RPC URL')
-  .action(async (opts: { sepolia_rpc_url: string }) => {
-    const { sepolia_rpc_url } = opts
+  .requiredOption('--sepolia-rpc-url <sepoliaRpcUrl>', 'Sepolia RPC URL')
+  .action(async (opts: { sepoliaRpcUrl: string }) => {
+    const { sepoliaRpcUrl } = opts
 
     console.log(`Starting payment listener`)
 
-    await App.start_sepolia_payment_listener(sepolia_rpc_url)
+    await App.start_sepolia_payment_listener(sepoliaRpcUrl)
+  })
+
+program
+  .command('start-payment-processor')
+  .description('Start Sepolia Payment Processor')
+  .action(async () => {
+    console.log(`Starting payment processor`)
+
+    await App.start_payment_processor()
   })
 
 const maybeCommand = process.argv[2]

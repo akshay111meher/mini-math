@@ -18,7 +18,7 @@ import {
 } from '@mini-math/adapters'
 import { PAYMENT_TOKENS } from '@mini-math/utils'
 import { config } from 'dotenv'
-import { PaymentListener, PaymentMessage } from '@mini-math/payment-listener'
+import { PaymentListener, PaymentMessage, PaymentProcessor } from '@mini-math/payment-listener'
 
 config()
 
@@ -125,12 +125,16 @@ export class App {
       userStore,
       'eth-sepolia',
       10026523,
-      64,
+      12,
       sepolia_rpc_url,
       payment_queue,
       [PAYMENT_TOKENS.SEPOLIA_USDC_ADDRESS],
     )
+    return payment_listener.start()
+  }
 
-    payment_listener.start()
+  public static async start_payment_processor(): Promise<void> {
+    const payment_processor = new PaymentProcessor(payment_queue)
+    await payment_processor.start()
   }
 }
