@@ -1,0 +1,22 @@
+version: '3.9'
+
+services:
+  n9n-payment-listener:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    container_name: n9n-payment-listener
+    restart: unless-stopped
+    env_file:
+      - .env
+    command:
+      [
+        'node',
+        './apps/n9n/dist/index.js',
+        'start-sepolia-payment-listener',
+        '--sepolia-rpc-url',
+        '${SEPOLIA_RPC_URL:-https://sepolia.drpc.org}',
+      ]
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      ELASTICSEARCH_INDEX: ${ELASTICSEARCH_INDEX:-n9n-server}

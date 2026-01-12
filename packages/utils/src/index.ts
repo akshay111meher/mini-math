@@ -12,6 +12,10 @@ export const COST = {
   IMAGE_STORAGE_COST_IN_CREDITS: 10,
 }
 
+export const PAYMENT_TOKENS = {
+  SEPOLIA_USDC_ADDRESS: '0x314b944A6790FD1Dd512722481bf8331A9D6e7E5',
+}
+
 export const deepClone = <T>(x: T): T => {
   // Use native deep clone when available
   try {

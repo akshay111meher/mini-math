@@ -59,6 +59,18 @@ program
     await App.start_worker(name, webhookSecret, parseInt(webhookTimeoutInMs))
   })
 
+program
+  .command('start-sepolia-payment-listener')
+  .description('Start Sepolia Payment Listener')
+  .requiredOption('--sepolia-rpc-url <SepoliaRpcUrl>', 'Sepolia RPC URL')
+  .action(async (opts: { sepolia_rpc_url: string }) => {
+    const { sepolia_rpc_url } = opts
+
+    console.log(`Starting payment listener`)
+
+    await App.start_sepolia_payment_listener(sepolia_rpc_url)
+  })
+
 const maybeCommand = process.argv[2]
 
 // Only treat it as a command if it's not an option (doesn't start with "-")

@@ -14,9 +14,11 @@ import {
   PostgresUserStore,
   PostgresCdpAccountStore,
   PostgresBatchStore,
+  PostgresKeyValueStore,
 } from '@mini-math/adapters'
-
+import { PAYMENT_TOKENS } from '@mini-math/utils'
 import { config } from 'dotenv'
+import { PaymentListener, PaymentMessage } from '@mini-math/payment-listener'
 
 config()
 
@@ -51,6 +53,14 @@ const userStore = new PostgresUserStore(
 )
 const cdpAccountStore = new PostgresCdpAccountStore(adapterConfig.getPostgresUrl())
 const batchStore = new PostgresBatchStore(adapterConfig.getPostgresUrl())
+const keyValueStore = new PostgresKeyValueStore(adapterConfig.getPostgresUrl())
+
+const payment_queue = new RabbitMQQueue<PaymentMessage>(
+  adapterConfig.getRabbitMqUrl(),
+  'payment_queue',
+  'payment_delay_queue',
+  1,
+)
 
 export class App {
   public static async start_server(
@@ -107,5 +117,20 @@ export class App {
       workerName,
     )
     return worker.start()
+  }
+
+  public static async start_sepolia_payment_listener(sepolia_rpc_url: string): Promise<void> {
+    const payment_listener = new PaymentListener(
+      keyValueStore,
+      userStore,
+      'eth-sepolia',
+      10026523,
+      64,
+      sepolia_rpc_url,
+      payment_queue,
+      [PAYMENT_TOKENS.SEPOLIA_USDC_ADDRESS],
+    )
+
+    payment_listener.start()
   }
 }
