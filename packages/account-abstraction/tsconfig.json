@@ -2,7 +2,7 @@
   "extends": "@mini-math/tsconfig/tsconfig.base.json",
   "compilerOptions": {
     "baseUrl": "./",
-    "rootDir": "typechain-types",
+    "rootDir": "typechain",
     "outDir": "dist",
     "composite": true,
     "declaration": true,
@@ -11,5 +11,5 @@
     "emitDeclarationOnly": false,
     "sourceMap": true
   },
-  "include": ["src"]
+  "include": ["typechain"]
 }
