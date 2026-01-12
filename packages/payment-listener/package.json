@@ -1,0 +1,36 @@
+{
+  "name": "@mini-math/payment-listener",
+  "version": "0.1.0",
+  "description": "Payment Listener",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build:types": "tsc -p tsconfig.build.json",
+    "build:js": "tsup src/index.ts --format esm,cjs",
+    "build": "npm run clean && npm run build:types && npm run build:js",
+    "clean": "rimraf dist",
+    "test": "vitest run",
+    "lint": "eslint . --ext .ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "@types/node": "^22.7.5"
+  }
+}
