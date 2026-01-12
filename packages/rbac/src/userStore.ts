@@ -285,10 +285,19 @@ export abstract class UserStore {
     return this._list(options)
   }
 
-  public async getByPaymentAddress(evm_payment_address: string): Promise<UserRecord | undefined> {
+  public async getUserusingPaymentAddress(paymentAddress: string): Promise<UserRecord | undefined> {
     await this.ensureInitialized()
-    const addr = EvmPaymentAddressSchema.parse(evm_payment_address)
-    return this._getByPaymentAddress(addr)
+    const addr = EvmPaymentAddressSchema.parse(paymentAddress)
+    return this._getUserusingPaymentAddress(addr)
+  }
+
+  /**
+   * 2) getUsersUsingPaymentsAddresses(paymentAddress[]) -> data[]
+   */
+  public async getUsersUsingPaymentsAddresses(paymentAddresses: string[]): Promise<UserRecord[]> {
+    await this.ensureInitialized()
+    const addrs = paymentAddresses.map((a) => EvmPaymentAddressSchema.parse(a))
+    return this._getUsersUsingPaymentsAddresses(addrs)
   }
 
   protected abstract initialize(): Promise<void>
@@ -334,9 +343,13 @@ export abstract class UserStore {
 
   protected abstract _list(options?: ListOptions): Promise<ListResult<UserRecord>>
 
-  protected abstract _getByPaymentAddress(
-    evm_payment_address: EvmPaymentAddress,
+  protected abstract _getUserusingPaymentAddress(
+    paymentAddress: EvmPaymentAddress,
   ): Promise<UserRecord | undefined>
+
+  protected abstract _getUsersUsingPaymentsAddresses(
+    paymentAddresses: EvmPaymentAddress[],
+  ): Promise<UserRecord[]>
 }
 
 const isEvmAddress = (s: string): boolean => /^0x[a-fA-F0-9]{40}$/.test(s)

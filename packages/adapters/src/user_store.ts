@@ -325,11 +325,11 @@ export class PostgresUserStore extends UserStore {
     }
   }
 
-  protected async _getByPaymentAddress(
-    evm_payment_address: string,
+  protected async _getUserusingPaymentAddress(
+    paymentAddress: string,
   ): Promise<UserRecord | undefined> {
     try {
-      const addr = EvmPaymentAddressSchema.parse(evm_payment_address)
+      const addr = EvmPaymentAddressSchema.parse(paymentAddress)
 
       const [row] = await this.db
         .select({
@@ -351,7 +351,44 @@ export class PostgresUserStore extends UserStore {
         cdpAccountCredits: row.cdpAccountCredits ?? 0,
       } as UserRecord
     } catch (err) {
-      this.handleError('_getByPaymentAddress', err, { evm_payment_address })
+      this.handleError('_getUserusingPaymentAddress', err, { paymentAddress })
+    }
+  }
+
+  protected async _getUsersUsingPaymentsAddresses(
+    paymentAddresses: string[],
+  ): Promise<UserRecord[]> {
+    try {
+      if (paymentAddresses.length === 0) return []
+
+      // validate + normalize (and dedupe to keep SQL smaller)
+      const addrs = Array.from(
+        new Set(paymentAddresses.map((a) => EvmPaymentAddressSchema.parse(a))),
+      )
+
+      const rows = await this.db
+        .select({
+          userId: users.userId,
+          evm_payment_address: users.evm_payment_address,
+          unifiedCredits: users.unifiedCredits,
+          cdpAccountCredits: users.cdpAccountCredits,
+        })
+        .from(users)
+        .where(sql`${users.evm_payment_address} = ANY(${addrs})`)
+
+      return rows.map(
+        (row) =>
+          ({
+            userId: row.userId,
+            evm_payment_address: row.evm_payment_address,
+            unifiedCredits: row.unifiedCredits ?? 0,
+            cdpAccountCredits: row.cdpAccountCredits ?? 0,
+          }) as UserRecord,
+      )
+    } catch (err) {
+      this.handleError('_getUsersUsingPaymentsAddresses', err, {
+        paymentAddressesCount: paymentAddresses.length,
+      })
     }
   }
 }

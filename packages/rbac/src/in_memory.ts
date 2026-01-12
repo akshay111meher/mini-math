@@ -264,13 +264,33 @@ export class InMemoryUserStore extends UserStore {
     return { items, nextCursor }
   }
 
-  protected async _getByPaymentAddress(
-    evm_payment_address: string,
-  ): Promise<UserRecord | undefined> {
+  private async _getByPaymentAddress(evm_payment_address: string): Promise<UserRecord | undefined> {
     const needle = this.norm(evm_payment_address)
     for (const u of this.store.values()) {
       if (this.norm(u.evm_payment_address) === needle) return { ...u }
     }
     return undefined
+  }
+
+  protected async _getUserusingPaymentAddress(
+    paymentAddress: string,
+  ): Promise<UserRecord | undefined> {
+    return this._getByPaymentAddress(paymentAddress)
+  }
+
+  protected async _getUsersUsingPaymentsAddresses(
+    paymentAddresses: string[],
+  ): Promise<UserRecord[]> {
+    // normalize + dedupe input
+    const needles = new Set(paymentAddresses.map((a) => this.norm(a)))
+    if (needles.size === 0) return []
+
+    const out: UserRecord[] = []
+    for (const u of this.store.values()) {
+      if (needles.has(this.norm(u.evm_payment_address))) {
+        out.push({ ...u })
+      }
+    }
+    return out
   }
 }
