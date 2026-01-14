@@ -203,6 +203,10 @@ export class PostgresTransactionStore extends UserTransactionStore {
       const limit = opts?.limit ?? 50
       const offset = opts?.offset ?? 0
 
+      if (limit > 50) {
+        throw new Error("limit can't be more than 50")
+      }
+
       const where = and(
         eq(userTransactions.userId, filter.userId),
         filter.direction ? eq(userTransactions.direction, filter.direction) : undefined,
