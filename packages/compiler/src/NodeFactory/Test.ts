@@ -54,6 +54,6 @@ export class TestNode extends BaseNode {
     return [out]
   }
   protected async _cost(): Promise<bigint> {
-    return BigInt(0)
+    return BigInt(Math.floor(Math.random() * 10) + 1)
   }
 }
