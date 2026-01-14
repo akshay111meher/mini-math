@@ -1,7 +1,7 @@
 import { BaseNode, OutputType, NodeDefType, WorkflowGlobalState } from '@mini-math/nodes'
 import { v4 as uuidv4 } from 'uuid'
 import { z } from 'zod'
-import { setGlobalValue } from './utils/globalState.js'
+import { setGlobalValue, getGlobalValue } from './utils/globalState.js'
 
 // types.ts
 export interface Value {
@@ -42,18 +42,49 @@ export class VariableNode extends BaseNode {
     }
 
     const inputData = (await this.getNodeInputData()) as GlobalStateType
+    const globalState = this.workflowGlobalState.getGlobalState<Record<string, unknown>>() ?? {}
+
+    // Generic variables (like $now, $today in code nodes)
+    const genericVars: Record<string, unknown> = {
+      now: new Date().toISOString(),
+      today: new Date().toISOString().split('T')[0],
+      timestamp: Date.now(),
+      random: Math.random(),
+    }
+
     let resolvedValue = variableValue
 
     if (typeof variableValue === 'string' && variableValue.includes('${')) {
       resolvedValue = variableValue.replace(/\$\{([^}]+)\}/g, (match, varName) => {
-        if (inputData.hasOwnProperty(varName)) {
-          const value = inputData[varName]
-          return typeof value === 'object' ? JSON.stringify(value) : String(value)
+        const trimmedVarName = varName.trim()
+
+        // Check generic variables first (now, today, timestamp, random)
+        if (genericVars.hasOwnProperty(trimmedVarName)) {
+          const value = genericVars[trimmedVarName]
+          const resolved = typeof value === 'object' ? JSON.stringify(value) : String(value)
+          this.logger.debug(`Resolved "${trimmedVarName}" from generic vars to: ${resolved}`)
+          return resolved
         }
+
+        // Then check global state (like $global.get('variableName'))
+        const globalValue = getGlobalValue(globalState, trimmedVarName)
+        if (globalValue !== undefined) {
+          const resolved =
+            typeof globalValue === 'object' ? JSON.stringify(globalValue) : String(globalValue)
+          this.logger.debug(`Resolved "${trimmedVarName}" from global state to: ${resolved}`)
+          return resolved
+        }
+
+        // Then check inputData
+        if (inputData.hasOwnProperty(trimmedVarName)) {
+          const value = inputData[trimmedVarName]
+          const resolved = typeof value === 'object' ? JSON.stringify(value) : String(value)
+          this.logger.debug(`Resolved "${trimmedVarName}" from inputData to: ${resolved}`)
+          return resolved
+        }
+
         this.logger.warn(
-          `Variable "${varName}" not found in input data. Available: ${Object.keys(inputData).join(
-            ', ',
-          )}`,
+          `Variable "${trimmedVarName}" not found. Available in generic: ${Object.keys(genericVars).join(', ')}, in global: ${Object.keys(globalState).join(', ')}, in inputData: ${Object.keys(inputData).join(', ')}`,
         )
         return match // Keep original if not found
       })

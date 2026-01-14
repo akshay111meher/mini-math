@@ -2,6 +2,7 @@ import { BaseNode, OutputType, NodeDefType, WorkflowGlobalState } from '@mini-ma
 import { z } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
 import { cdpService } from './utils/cdpService.js'
+import { getGlobalValue } from './utils/globalState.js'
 
 interface WalletInfo {
   walletType: string
@@ -25,6 +26,43 @@ const CdpTransactionNodeConfigSchema = z.object({
 
 type CdpTransactionNodeConfig = z.infer<typeof CdpTransactionNodeConfigSchema>
 
+/**
+ * Resolve ${varName} style placeholders in a string using:
+ * 1. Built-in generic variables (now, today, timestamp, random)
+ * 2. The workflow global state (values written by VariableNode, CodeNode, etc.)
+ *
+ * Unresolved placeholders are left as-is.
+ */
+const resolveVariablesInString = (raw: string, globalState: Record<string, unknown>): string => {
+  if (typeof raw !== 'string' || !raw.includes('${')) return raw
+
+  const genericVars: Record<string, unknown> = {
+    now: new Date().toISOString(),
+    today: new Date().toISOString().split('T')[0],
+    timestamp: Date.now(),
+    random: Math.random(),
+  }
+
+  return raw.replace(/\$\{([^}]+)\}/g, (match, varName) => {
+    const trimmedVarName = varName.trim()
+
+    // 1. Generic variables
+    if (Object.prototype.hasOwnProperty.call(genericVars, trimmedVarName)) {
+      const value = genericVars[trimmedVarName]
+      return typeof value === 'object' ? JSON.stringify(value) : String(value)
+    }
+
+    // 2. Global state (populated by previous nodes)
+    const globalValue = getGlobalValue(globalState, trimmedVarName)
+    if (typeof globalValue !== 'undefined') {
+      return typeof globalValue === 'object' ? JSON.stringify(globalValue) : String(globalValue)
+    }
+
+    // 3. Leave as-is if unresolved
+    return match
+  })
+}
+
 export class CdpTransactionNode extends BaseNode {
   constructor(nodeDef: NodeDefType, workflowGlobalStateRef: WorkflowGlobalState, factory: string) {
     super(nodeDef, workflowGlobalStateRef, factory, 'CdpTransactionNode')
@@ -34,16 +72,10 @@ export class CdpTransactionNode extends BaseNode {
     const raw: unknown = this.nodeDef.data ?? this.nodeDef.config ?? {}
     const nodeConfig: CdpTransactionNodeConfig = CdpTransactionNodeConfigSchema.parse(raw)
 
-    // Check for manual mode in config or global state
-    // The user wants "manual wallet flow not implemented" if it's manual.
-    // We check the wallet info from global state.
-    const globalState = this.workflowGlobalState.getGlobalState<WalletGlobalState>() ?? {}
-    const walletInfo = globalState.wallet
+    const globalState = this.workflowGlobalState.getGlobalState<Record<string, unknown>>() ?? {}
+    const walletInfo = (globalState as WalletGlobalState).wallet
 
     if (!walletInfo) {
-      // If no wallet info, maybe it's manual or not initialized.
-      // But if the previous node was manual wallet, it would have thrown.
-      // If we are here, maybe we should check if we are in manual mode from config?
       if (nodeConfig.uiMode === 'manual') {
         throw new Error('Manual wallet flow not implemented')
       }
@@ -55,22 +87,20 @@ export class CdpTransactionNode extends BaseNode {
     }
 
     const { recipientAddress, amount, tokenType, customTokenAddress, description } = nodeConfig
+
+    const resolvedRecipientAddress = resolveVariablesInString(recipientAddress, globalState)
+    const resolvedAmount = resolveVariablesInString(amount, globalState)
+
     const network = walletInfo.network || 'base-sepolia'
     const accountName = walletInfo.accountName
 
     let result
     if (tokenType === 'eth') {
-      // Use transferWithSmartAccount for ETH (it handles it as a token or native?)
-      // cdpService.transferWithSmartAccount takes 'token' param.
-      // If token is 'eth', it should work if cdpService handles it, or we use sendTransaction.
-      // Looking at cdpService.ts: transferWithSmartAccount uses cdpAccount.transfer.
-      // cdpAccount.transfer docs say it handles assets.
-
       result = await cdpService.transferWithSmartAccount({
         accountName,
         network,
-        to: recipientAddress,
-        amount,
+        to: resolvedRecipientAddress,
+        amount: resolvedAmount,
         token: 'eth', // Assuming 'eth' is valid for cdp sdk
         description,
         waitForConfirmation: true,
@@ -81,8 +111,8 @@ export class CdpTransactionNode extends BaseNode {
       result = await cdpService.transferWithSmartAccount({
         accountName,
         network,
-        to: recipientAddress,
-        amount,
+        to: resolvedRecipientAddress,
+        amount: resolvedAmount,
         token,
         description,
         waitForConfirmation: true,
