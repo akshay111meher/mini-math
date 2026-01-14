@@ -1,5 +1,5 @@
 import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres'
-import { and, eq, like, sql } from 'drizzle-orm'
+import { eq, like, sql } from 'drizzle-orm'
 import { Pool } from 'pg'
 import { makeLogger, Logger } from '@mini-math/logger'
 
@@ -121,7 +121,7 @@ export class PostgresKeyValueStore {
       const rows = await this.db
         .select({ key: kvs.key, value: kvs.value })
         .from(kvs)
-        .where(whereClause as any)
+        .where(whereClause)
 
       return rows.map((r) => ({ key: r.key, value: r.value }))
     } catch (err) {

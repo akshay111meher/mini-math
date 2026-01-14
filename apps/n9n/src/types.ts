@@ -71,6 +71,8 @@ const reconciliation_queue = new RabbitMQQueue<string>(
   1,
 )
 
+const transactionStore = new PostgresTransactionStore(adapterConfig.getPostgresUrl())
+
 export class App {
   public static async start_server(
     DOMAIN: string,
@@ -87,6 +89,7 @@ export class App {
       secretStore,
       imageStore,
       userStore,
+      transactionStore,
       root_workflow_queue,
       sessionStore,
       cdpAccountStore,
@@ -143,8 +146,6 @@ export class App {
   }
 
   public static async start_payment_processor(): Promise<void> {
-    const transactionStore = new PostgresTransactionStore(adapterConfig.getPostgresUrl())
-
     const payment_processor = new PaymentProcessor(
       payment_queue,
       reconciliation_queue,

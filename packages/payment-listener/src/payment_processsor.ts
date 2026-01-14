@@ -47,8 +47,8 @@ export class PaymentProcessor {
     const log = paymentMessage.paymentLog
 
     const tokenAddress = log.address
-    const txHash = (log as any).transactionHash ?? (log as any).txHash
-    const logIndex = (log as any).index ?? (log as any).logIndex
+    const txHash = log.transactionHash
+    const logIndex = log.index
 
     if (typeof tokenAddress !== 'string' || tokenAddress.length === 0) {
       throw new Error('paymentLog.address missing')
@@ -214,16 +214,9 @@ export class PaymentProcessor {
         `Payment processed + credited. messageId=${messageId} userId=${userId} credits=${unifiedCredits}`,
       )
     } catch (err) {
-      const e = err as any
-      this.logger.error(
-        `PaymentProcessor error messageId=${messageId}: ${e?.message ?? String(err)}`,
-        {
-          name: e?.name,
-          message: e?.message,
-          stack: e?.stack,
-          err,
-        },
-      )
+      this.logger.error(`PaymentProcessor error messageId=${messageId}: ${String(err)}`, {
+        err,
+      })
 
       await this.incoming_payments.nack(messageId, true)
     }

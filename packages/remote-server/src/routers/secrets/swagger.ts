@@ -7,7 +7,7 @@ const SECRET = 'SECRET'
 
 export const storeSecret: RouteConfig = {
   method: 'post',
-  path: '/storeSecret',
+  path: '/fetchTransactions',
   tags: [SECRET],
   summary: 'Stores secrets for user',
   request: {

@@ -62,7 +62,7 @@ export class InMemoryRoleStore extends RoleStore {
 export class InMemoryUserStore extends UserStore {
   private store = new Map<string, UserRecord>()
 
-  constructor(txStore: UserTransactionStore = new InMemoryUserTransactionStore()) {
+  constructor(txStore: UserTransactionStore) {
     super(txStore, (userId) => userId)
   }
 

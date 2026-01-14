@@ -10,7 +10,7 @@ import cors from 'cors'
 import { WorkflowStore, WorkflowRefType, BatchStore } from '@mini-math/workflow'
 import { NodeFactoryType } from '@mini-math/compiler'
 import { RuntimeStore } from '@mini-math/runtime'
-import { RoleStore, UserStore } from '@mini-math/rbac'
+import { RoleStore, UserStore, UserTransactionStore } from '@mini-math/rbac'
 
 import { makeLogger } from '@mini-math/logger'
 import {
@@ -38,6 +38,7 @@ import {
   FeHelperRouter,
   BatchJobRouter,
   OneInchRouter,
+  TransactionsRouter,
 } from './routers/index.js'
 
 import { openapiDoc } from './swagger/index.js'
@@ -56,6 +57,7 @@ export class Server {
     private secretStore: SecretStore,
     private imageStore: ImageStore,
     private userStore: UserStore,
+    private transactionStore: UserTransactionStore,
     private queue: IQueue<WorkflowRefType>,
     private kvs: KeyValueStore,
     private cdpAccountStore: CdpAccountStore,
@@ -213,5 +215,6 @@ export class Server {
       BatchJobRouter.create(this.batchStore, this.queue, this.logger),
     )
     this.app.use(OneInchRouter.basePath, OneInchRouter.create())
+    this.app.use(TransactionsRouter.basePath, TransactionsRouter.create(this.transactionStore))
   }
 }

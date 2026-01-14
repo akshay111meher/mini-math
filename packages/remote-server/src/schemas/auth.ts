@@ -1,3 +1,4 @@
+import { UserRecordSchema } from '@mini-math/rbac'
 import z from 'zod'
 
 export const SiweNonceResponse = z.object({ nonce: z.string() }).openapi('SiweNonceResponse')
@@ -31,6 +32,7 @@ const AuthUser = z
 export const MeResponse = z
   .object({
     user: AuthUser.nullable(),
+    userData: UserRecordSchema,
   })
   .openapi('MeResponse')
 

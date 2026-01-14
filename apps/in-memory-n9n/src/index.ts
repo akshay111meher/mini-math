@@ -4,7 +4,7 @@ import { InMemoryRuntimeStore } from '@mini-math/runtime'
 import { InMemoryWorkflowStore, WorkflowRefType, InMemoryBatchStore } from '@mini-math/workflow'
 import { RemoteWorker } from '@mini-math/remote-worker'
 import { InMemoryKeyValueStore } from '@mini-math/keystore'
-import { InMemoryRoleStore, InMemoryUserStore } from '@mini-math/rbac'
+import { InMemoryRoleStore, InMemoryUserStore, InMemoryUserTransactionStore } from '@mini-math/rbac'
 
 import { InMemoryQueue } from '@mini-math/queue'
 import { InMemoryCdpStore, InMemorySecretStore } from '@mini-math/secrets'
@@ -22,7 +22,8 @@ const sessionStore = new InMemoryKeyValueStore()
 const secretStore = new InMemorySecretStore()
 const roleStore = new InMemoryRoleStore(INIT_PLATFORM_OWNER)
 const imageStore = new InMemoryImageStore()
-const userStore = new InMemoryUserStore()
+const transactionStore = new InMemoryUserTransactionStore()
+const userStore = new InMemoryUserStore(transactionStore)
 const cdpAccountStore = new InMemoryCdpStore()
 const batchStore = new InMemoryBatchStore(workflowStore, runtimeStore)
 
@@ -53,6 +54,7 @@ const server = new Server(
   secretStore,
   imageStore,
   userStore,
+  transactionStore,
   root_workflow_queue,
   sessionStore,
   cdpAccountStore,

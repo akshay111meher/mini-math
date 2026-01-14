@@ -15,6 +15,7 @@ import {
   config as adapterConfig,
   PostgresCdpAccountStore,
   PostgresBatchStore,
+  PostgresTransactionStore,
 } from '@mini-math/adapters'
 
 import { makePaymentResolver } from '@mini-math/rbac'
@@ -57,6 +58,7 @@ const userStore = new PostgresUserStore(
 )
 const cdpAccountStore = new PostgresCdpAccountStore(adapterConfig.getPostgresUrl())
 const batchStore = new PostgresBatchStore(adapterConfig.getPostgresUrl())
+const transactionStore = new PostgresTransactionStore(adapterConfig.getPostgresUrl())
 
 // const worker1 = new RemoteWorker(
 //   queue,
@@ -86,6 +88,7 @@ const server = new Server(
   secretStore,
   imageStore,
   userStore,
+  transactionStore,
   queue,
   sessionStore,
   cdpAccountStore,

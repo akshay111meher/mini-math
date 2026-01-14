@@ -9,3 +9,4 @@ export * as FeHelperRouter from './feHelpers/index.js'
 export * as BatchJobRouter from './batch/index.js'
 
 export * as OneInchRouter from './1inch/index.js'
+export * as TransactionsRouter from './transactions/index.js'

@@ -11,6 +11,7 @@ import {
   FeHelperRouter,
   BatchJobRouter,
   OneInchRouter,
+  TransactionsRouter,
 } from '../routers/index.js'
 
 const registry = new OpenAPIRegistry()
@@ -26,6 +27,7 @@ const allDocs: RouteConfig[] = [
   ...FeHelperRouter.doc,
   ...BatchJobRouter.doc,
   ...OneInchRouter.doc,
+  ...TransactionsRouter.doc,
 ]
 
 for (let index = 0; index < allDocs.length; index++) {
