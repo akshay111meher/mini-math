@@ -29,3 +29,34 @@ services:
       # override / ensure some defaults if not in .env
       NODE_ENV: ${NODE_ENV:-production}
       ELASTICSEARCH_INDEX: ${ELASTICSEARCH_INDEX:-n9n-server}
+  n9n-sepolia-payment-listener:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    container_name: n9n-sepolia-payment-listener
+    restart: unless-stopped
+    env_file:
+      - .env
+    command:
+      [
+        'node',
+        './apps/n9n/dist/index.js',
+        'start-sepolia-payment-listener',
+        '--sepolia-rpc-url',
+        '${SEPOLIA_RPC_URL}',
+      ]
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      ELASTICSEARCH_INDEX: ${ELASTICSEARCH_INDEX:-n9n-sepolia-payment-listener}
+  n9n-payment-processor:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    container_name: n9n-payment-processor
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: ['node', './apps/n9n/dist/index.js', 'start-payment-processor']
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      ELASTICSEARCH_INDEX: ${ELASTICSEARCH_INDEX:-n9n-sepolia-payment-listener}
