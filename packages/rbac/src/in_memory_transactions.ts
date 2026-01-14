@@ -2,7 +2,7 @@ import {
   BalanceView,
   CreateUserTx,
   EvmRef,
-  ListOptions,
+  TransactionListOptions,
   TxConflictError,
   TxFilter,
   UserTransactionStore,
@@ -208,7 +208,7 @@ export class InMemoryUserTransactionStore extends UserTransactionStore {
     return id ? (this.byId.get(id) ?? null) : null
   }
 
-  public async list(filter: TxFilter, opts?: ListOptions): Promise<UserTxRecord[]> {
+  public async list(filter: TxFilter, opts?: TransactionListOptions): Promise<UserTxRecord[]> {
     const order = opts?.order ?? 'desc'
     const limit = opts?.limit ?? 50
     const offset = opts?.offset ?? 0

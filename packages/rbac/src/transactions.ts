@@ -1,45 +1,82 @@
-export type UUID = string
+import { z } from 'zod'
 
-export type TxDirection = 'credit' | 'debit'
-export type TxSource = 'platform' | 'evm'
+// --------------------
+// UUID
+// --------------------
+export const UUIDSchema = z.string()
+export type UUID = z.infer<typeof UUIDSchema>
 
-export interface MoneyAmount {
-  amount: string
-  decimals: number
-  symbol: string
-}
+// --------------------
+// Enums / literals
+// --------------------
+export const TxDirectionSchema = z.enum(['credit', 'debit'])
+export type TxDirection = z.infer<typeof TxDirectionSchema>
 
-export interface EvmRef {
-  chainId: number
-  tokenAddress: string
-  txHash: string
-  logIndex?: number
-  from?: string
-  to?: string
-  blockNumber?: number
-}
+export const TxSourceSchema = z.enum(['platform', 'evm'])
+export type TxSource = z.infer<typeof TxSourceSchema>
 
-export interface CreateUserTx {
-  userId: UUID
-  direction: TxDirection
-  source: TxSource
-  asset: MoneyAmount
-  memo?: string
-  platformRef?: {
-    kind: 'admin_adjustment' | 'reward' | 'purchase' | 'refund' | 'other'
-    refId?: string
-  }
-  evmRef?: EvmRef
-  meta?: Record<string, unknown>
-}
+// --------------------
+// MoneyAmount
+// --------------------
+export const MoneyAmountSchema = z.object({
+  amount: z.string(),
+  decimals: z.number().int().nonnegative(),
+  symbol: z.string().min(1),
+})
+export type MoneyAmount = z.infer<typeof MoneyAmountSchema>
 
-export interface UserTxRecord extends CreateUserTx {
-  id: UUID
-  idempotencyKey: string
-  createdAt: Date
-  updatedAt: Date
-}
+// --------------------
+// EvmRef
+// --------------------
+export const EvmRefSchema = z.object({
+  chainId: z.number().int(),
+  tokenAddress: z.string(),
+  txHash: z.string(),
+  logIndex: z.number().int().nonnegative().optional(),
+  from: z.string().optional(),
+  to: z.string().optional(),
+  blockNumber: z.number().int().nonnegative().optional(),
+})
+export type EvmRef = z.infer<typeof EvmRefSchema>
 
+// --------------------
+// PlatformRef
+// --------------------
+export const PlatformRefSchema = z.object({
+  kind: z.enum(['admin_adjustment', 'reward', 'purchase', 'refund', 'other']),
+  refId: z.string().optional(),
+})
+export type PlatformRef = z.infer<typeof PlatformRefSchema>
+
+// --------------------
+// CreateUserTx
+// --------------------
+export const CreateUserTxSchema = z.object({
+  userId: UUIDSchema,
+  direction: TxDirectionSchema,
+  source: TxSourceSchema,
+  asset: MoneyAmountSchema,
+  memo: z.string().optional(),
+  platformRef: PlatformRefSchema.optional(),
+  evmRef: EvmRefSchema.optional(),
+  meta: z.record(z.string(), z.unknown()).optional(),
+})
+export type CreateUserTx = z.infer<typeof CreateUserTxSchema>
+
+// --------------------
+// UserTxRecord
+// --------------------
+export const UserTxRecordSchema = CreateUserTxSchema.extend({
+  id: UUIDSchema,
+  idempotencyKey: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+})
+export type UserTxRecord = z.infer<typeof UserTxRecordSchema>
+
+// --------------------
+// Errors (classes stay as-is)
+// --------------------
 export class TxConflictError extends Error {
   constructor(message: string) {
     super(message)
@@ -54,26 +91,38 @@ export class TxValidationError extends Error {
   }
 }
 
-export interface ListOptions {
-  limit?: number
-  offset?: number
-  order?: 'asc' | 'desc'
-}
+// --------------------
+// ListOptions
+// --------------------
+export const TransactionListOptionsSchema = z.object({
+  limit: z.number().int().positive().optional(),
+  offset: z.number().int().nonnegative().optional(),
+  order: z.enum(['asc', 'desc']).optional(),
+})
+export type TransactionListOptions = z.infer<typeof TransactionListOptionsSchema>
 
-export interface TxFilter {
-  userId: UUID
-  direction?: TxDirection
-  source?: TxSource
-  symbol?: string
-  since?: Date
-  until?: Date
-}
+// --------------------
+// TxFilter
+// --------------------
+export const TxFilterSchema = z.object({
+  userId: UUIDSchema,
+  direction: TxDirectionSchema.optional(),
+  source: TxSourceSchema.optional(),
+  symbol: z.string().optional(),
+  since: z.date().optional(),
+  until: z.date().optional(),
+})
+export type TxFilter = z.infer<typeof TxFilterSchema>
 
-export interface BalanceView {
-  symbol: string
-  decimals: number
-  amount: string
-}
+// --------------------
+// BalanceView
+// --------------------
+export const BalanceViewSchema = z.object({
+  symbol: z.string().min(1),
+  decimals: z.number().int().nonnegative(),
+  amount: z.string(),
+})
+export type BalanceView = z.infer<typeof BalanceViewSchema>
 
 export abstract class UserTransactionStore {
   public async credit(input: Omit<CreateUserTx, 'direction'>): Promise<UserTxRecord> {
@@ -82,7 +131,7 @@ export abstract class UserTransactionStore {
       direction: 'credit',
     }
     this.validateCreate(tx)
-    const idempotencyKey = this.computeIdempotencyKey(tx)
+    const idempotencyKey = UserTransactionStore.computeIdempotencyKey(tx)
     return this._createConfirmed(tx, idempotencyKey)
   }
 
@@ -97,7 +146,7 @@ export abstract class UserTransactionStore {
       source: 'platform',
     }
     this.validateCreate(tx)
-    const idempotencyKey = this.computeIdempotencyKey(tx)
+    const idempotencyKey = UserTransactionStore.computeIdempotencyKey(tx)
     return this._createConfirmed(tx, idempotencyKey)
   }
 
@@ -110,7 +159,7 @@ export abstract class UserTransactionStore {
 
   public abstract getByEvmRef(ref: EvmRef): Promise<UserTxRecord | null>
 
-  public abstract list(filter: TxFilter, opts?: ListOptions): Promise<UserTxRecord[]>
+  public abstract list(filter: TxFilter, opts?: TransactionListOptions): Promise<UserTxRecord[]>
 
   public async getBalances(userId: UUID): Promise<BalanceView[]> {
     return this._getBalances(userId)
@@ -172,7 +221,7 @@ export abstract class UserTransactionStore {
     }
   }
 
-  protected computeIdempotencyKey(tx: CreateUserTx): string {
+  public static computeIdempotencyKey(tx: CreateUserTx): string {
     if (tx.source === 'platform') {
       const kind = tx.platformRef?.kind ?? 'other'
       const refId = tx.platformRef?.refId ?? ''

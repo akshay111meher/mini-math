@@ -15,6 +15,7 @@ import {
   PostgresCdpAccountStore,
   PostgresBatchStore,
   PostgresKeyValueStore,
+  PostgresTransactionStore,
 } from '@mini-math/adapters'
 import { PAYMENT_TOKENS } from '@mini-math/utils'
 import { config } from 'dotenv'
@@ -51,6 +52,7 @@ const userStore = new PostgresUserStore(
   adapterConfig.getPostgresUrl(),
   adapterConfig.getPaymentResolver(),
 )
+
 const cdpAccountStore = new PostgresCdpAccountStore(adapterConfig.getPostgresUrl())
 const batchStore = new PostgresBatchStore(adapterConfig.getPostgresUrl())
 const keyValueStore = new PostgresKeyValueStore(adapterConfig.getPostgresUrl())
@@ -59,6 +61,13 @@ const payment_queue = new RabbitMQQueue<PaymentMessage>(
   adapterConfig.getRabbitMqUrl(),
   'payment_queue',
   'payment_delay_queue',
+  1,
+)
+
+const reconciliation_queue = new RabbitMQQueue<string>(
+  adapterConfig.getRabbitMqUrl(),
+  'reconciliation_queue',
+  'reconciliation_delay_queue',
   1,
 )
 
@@ -128,13 +137,21 @@ export class App {
       12,
       sepolia_rpc_url,
       payment_queue,
-      [PAYMENT_TOKENS.SEPOLIA_USDC_ADDRESS],
+      [PAYMENT_TOKENS.SEPOLIA_USDC_ADDRESS.address],
     )
     return payment_listener.start()
   }
 
   public static async start_payment_processor(): Promise<void> {
-    const payment_processor = new PaymentProcessor(payment_queue)
+    const transactionStore = new PostgresTransactionStore(adapterConfig.getPostgresUrl())
+
+    const payment_processor = new PaymentProcessor(
+      payment_queue,
+      reconciliation_queue,
+      transactionStore,
+      userStore,
+      [PAYMENT_TOKENS.SEPOLIA_USDC_ADDRESS],
+    )
     await payment_processor.start()
   }
 }

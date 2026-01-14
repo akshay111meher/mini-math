@@ -4,7 +4,7 @@ import {
   BalanceView,
   CreateUserTx,
   EvmRef,
-  ListOptions,
+  TransactionListOptions,
   TxConflictError,
   TxFilter,
   UserTransactionStore,
@@ -195,7 +195,7 @@ export class PostgresTransactionStore extends UserTransactionStore {
     }
   }
 
-  public async list(filter: TxFilter, opts?: ListOptions): Promise<UserTxRecord[]> {
+  public async list(filter: TxFilter, opts?: TransactionListOptions): Promise<UserTxRecord[]> {
     await this.ensureInitialized()
 
     try {

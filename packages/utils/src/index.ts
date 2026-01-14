@@ -13,7 +13,11 @@ export const COST = {
 }
 
 export const PAYMENT_TOKENS = {
-  SEPOLIA_USDC_ADDRESS: '0x314b944A6790FD1Dd512722481bf8331A9D6e7E5',
+  SEPOLIA_USDC_ADDRESS: {
+    address: '0x314b944A6790FD1Dd512722481bf8331A9D6e7E5',
+    decimals: 18,
+    chainId: 11155111,
+  },
 }
 
 export const deepClone = <T>(x: T): T => {

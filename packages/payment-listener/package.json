@@ -38,6 +38,7 @@
     "@mini-math/adapters": "^0.1.0",
     "@mini-math/logger": "^0.1.0",
     "@mini-math/rbac": "^0.1.0",
+    "@mini-math/utils": "^0.1.0",
     "ethers": "^6.16.0"
   }
 }
