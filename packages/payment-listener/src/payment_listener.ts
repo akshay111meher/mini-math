@@ -7,7 +7,7 @@ const WAIT_TIME = 12000
 const CHUNK_SIZE = 200
 
 // how many blocks to fetch in one go
-const BLOCK_BATCH_SIZE = 100
+const BLOCK_BATCH_SIZE = 5
 
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = []
